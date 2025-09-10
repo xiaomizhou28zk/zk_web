@@ -4,7 +4,7 @@ package api; //包名
 import "google/api/annotations.proto";
 import "validate/validate.proto";
 
-option go_package = "https://github.com/xiaomizhou28zk/zk_web/api/user;user";
+option go_package = "github.com/xiaomizhou28zk/zk_web/api/user;user";
 
 service ChannelRechargePanel {
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
