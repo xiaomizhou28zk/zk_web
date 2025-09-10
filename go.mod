@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/envoyproxy/protoc-gen-validate v1.2.1
 	github.com/go-kratos/kratos/v2 v2.8.4
+	github.com/google/wire v0.7.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250908214217-97024824d090
 	google.golang.org/protobuf v1.36.9
 )
