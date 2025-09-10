@@ -1,0 +1,7 @@
+syntax = "proto3";  // 指定 proto3 语法（推荐）
+package common;     // proto 包名
+
+// 添加 go_package 配置（根据你的实际项目路径调整）
+option go_package = "github.com/xiaomizhou28zk/zk_web/api/common;common";
+
+// 你的其他定义...

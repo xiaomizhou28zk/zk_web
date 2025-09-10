@@ -1,0 +1,51 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: ChannelRechargePanel API
+    version: 0.0.1
+paths:
+    /api/user/info:
+        get:
+            tags:
+                - ChannelRechargePanel
+            operationId: ChannelRechargePanel_GetUserInfo
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.GetUserInfoResponse'
+    /api/user/login:
+        post:
+            tags:
+                - ChannelRechargePanel
+            operationId: ChannelRechargePanel_Login
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.LoginRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.LoginResponse'
+components:
+    schemas:
+        api.GetUserInfoResponse:
+            type: object
+            properties: {}
+        api.LoginRequest:
+            type: object
+            properties: {}
+        api.LoginResponse:
+            type: object
+            properties: {}
+tags:
+    - name: ChannelRechargePanel

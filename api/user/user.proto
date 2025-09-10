@@ -1,0 +1,30 @@
+syntax = "proto3";  //语法声明
+package api; //包名
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "https://github.com/xiaomizhou28zk/zk_web/api/user;user";
+
+service ChannelRechargePanel {
+  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/user/info"
+    };
+  }
+
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/user/login"
+      body: "*"
+    };
+  }
+}
+
+message GetUserInfoRequest {}
+
+message GetUserInfoResponse{}
+
+message LoginRequest{}
+
+message LoginResponse{}
