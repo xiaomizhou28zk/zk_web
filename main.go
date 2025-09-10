@@ -1,22 +1,35 @@
 package main
 
 import (
-	//"book-demo/handler"
-	pb "github.com/xiaomizhou28zk/zk_web/api/user" // 导入生成的路由代码
-	"github.com/gin-gonic/gin"
+	"github.com/go-kratos/kratos/v2"
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/transport/http"
+	pb "github.com/xiaomizhou28zk/zk_web/api/user"
+	"github.com/xiaomizhou28zk/zk_web/internal/application/user"
+	pkgLog "github.com/xiaomizhou28zk/zk_web/internal/pkg/log"
 )
 
 func main() {
-	r := gin.Default()
+	globalLogger, err := pkgLog.InitGlobalLogger("./log")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	pb.RegisterChannelRechargePanelHTTPServer()
+	userService := user.NewUserService()
 
-	// 注册生成的路由，并绑定实际处理器
-	pb.RegisterBookServiceHandlers(r, &pb.BookServiceHandlers{
-		GetBookList: handler.GetBookList, // 绑定获取列表的处理器
-		GetBook:     handler.GetBook,     // 绑定获取单本书的处理器
-	})
+	httpSrv := http.NewServer(http.Address(":8080"))
 
-	// 启动HTTP服务
-	r.Run(":8080")
+	pb.RegisterUserServiceHTTPServer(httpSrv, userService)
+
+	app := kratos.New(
+		kratos.Name("user-service"),
+		kratos.Logger(globalLogger),
+		kratos.Server(
+			httpSrv,
+		),
+	)
+
+	if err = app.Run(); err != nil {
+		pkgLog.Error("failed to run app: %v", err)
+	}
 }

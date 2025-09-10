@@ -159,6 +159,12 @@ func (m *GetUserInfoResponse) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Name
+
+	// no validation rules for Email
+
+	// no validation rules for Avatar
+
 	if len(errors) > 0 {
 		return GetUserInfoResponseMultiError(errors)
 	}

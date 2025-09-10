@@ -1,0 +1,9 @@
+*.log
+/log/
+server
+.vscode/
+.idea
+*.rdb
+*.jpg
+*.png
+*.jpeg

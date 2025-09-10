@@ -40,7 +40,13 @@ components:
     schemas:
         api.GetUserInfoResponse:
             type: object
-            properties: {}
+            properties:
+                name:
+                    type: string
+                email:
+                    type: string
+                avatar:
+                    type: string
         api.LoginRequest:
             type: object
             properties: {}
