@@ -81,5 +81,16 @@ clean-deps:
 	@rm -rf $(THIRD_PARTY_DIR)
 	@echo "Third-party dependencies removed."
 
+# generate
+generate:
+	go mod tidy
+	GOFLAGS=-mod=mod go generate ./...
+	#make fmt
+
+# generate 缩写
+gen:
+	make generate
+
+
 # 伪目标声明
-.PHONY: all check-tools install-deps api run clean clean-deps
+.PHONY: all check-tools install-deps api run clean clean-deps generate gen

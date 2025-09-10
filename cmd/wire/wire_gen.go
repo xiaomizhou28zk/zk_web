@@ -5,3 +5,21 @@
 // +build !wireinject
 
 package wire
+
+import (
+	"github.com/go-kratos/kratos/v2"
+	"github.com/xiaomizhou28zk/zk_web/internal/app_entrance/server/http"
+	"github.com/xiaomizhou28zk/zk_web/internal/application/user"
+)
+
+// Injectors from wire.go:
+
+// WireServer init kratos application.
+func WireServer() (*kratos.App, func(), error) {
+	userService := user.NewUserService()
+	register := http.NewRegister(userService)
+	server := http.NewServer(register)
+	app := newServer(server)
+	return app, func() {
+	}, nil
+}
