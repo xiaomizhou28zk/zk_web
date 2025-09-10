@@ -19,27 +19,27 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationChannelRechargePanelGetUserInfo = "/api.ChannelRechargePanel/GetUserInfo"
-const OperationChannelRechargePanelLogin = "/api.ChannelRechargePanel/Login"
+const OperationUserServiceGetUserInfo = "/api.UserService/GetUserInfo"
+const OperationUserServiceLogin = "/api.UserService/Login"
 
-type ChannelRechargePanelHTTPServer interface {
+type UserServiceHTTPServer interface {
 	GetUserInfo(context.Context, *GetUserInfoRequest) (*GetUserInfoResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 }
 
-func RegisterChannelRechargePanelHTTPServer(s *http.Server, srv ChannelRechargePanelHTTPServer) {
+func RegisterUserServiceHTTPServer(s *http.Server, srv UserServiceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/api/user/info", _ChannelRechargePanel_GetUserInfo0_HTTP_Handler(srv))
-	r.POST("/api/user/login", _ChannelRechargePanel_Login0_HTTP_Handler(srv))
+	r.GET("/api/user/info", _UserService_GetUserInfo0_HTTP_Handler(srv))
+	r.POST("/api/user/login", _UserService_Login0_HTTP_Handler(srv))
 }
 
-func _ChannelRechargePanel_GetUserInfo0_HTTP_Handler(srv ChannelRechargePanelHTTPServer) func(ctx http.Context) error {
+func _UserService_GetUserInfo0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in GetUserInfoRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationChannelRechargePanelGetUserInfo)
+		http.SetOperation(ctx, OperationUserServiceGetUserInfo)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
 			return srv.GetUserInfo(ctx, req.(*GetUserInfoRequest))
 		})
@@ -52,7 +52,7 @@ func _ChannelRechargePanel_GetUserInfo0_HTTP_Handler(srv ChannelRechargePanelHTT
 	}
 }
 
-func _ChannelRechargePanel_Login0_HTTP_Handler(srv ChannelRechargePanelHTTPServer) func(ctx http.Context) error {
+func _UserService_Login0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in LoginRequest
 		if err := ctx.Bind(&in); err != nil {
@@ -61,7 +61,7 @@ func _ChannelRechargePanel_Login0_HTTP_Handler(srv ChannelRechargePanelHTTPServe
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationChannelRechargePanelLogin)
+		http.SetOperation(ctx, OperationUserServiceLogin)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
 			return srv.Login(ctx, req.(*LoginRequest))
 		})
@@ -74,24 +74,24 @@ func _ChannelRechargePanel_Login0_HTTP_Handler(srv ChannelRechargePanelHTTPServe
 	}
 }
 
-type ChannelRechargePanelHTTPClient interface {
+type UserServiceHTTPClient interface {
 	GetUserInfo(ctx context.Context, req *GetUserInfoRequest, opts ...http.CallOption) (rsp *GetUserInfoResponse, err error)
 	Login(ctx context.Context, req *LoginRequest, opts ...http.CallOption) (rsp *LoginResponse, err error)
 }
 
-type ChannelRechargePanelHTTPClientImpl struct {
+type UserServiceHTTPClientImpl struct {
 	cc *http.Client
 }
 
-func NewChannelRechargePanelHTTPClient(client *http.Client) ChannelRechargePanelHTTPClient {
-	return &ChannelRechargePanelHTTPClientImpl{client}
+func NewUserServiceHTTPClient(client *http.Client) UserServiceHTTPClient {
+	return &UserServiceHTTPClientImpl{client}
 }
 
-func (c *ChannelRechargePanelHTTPClientImpl) GetUserInfo(ctx context.Context, in *GetUserInfoRequest, opts ...http.CallOption) (*GetUserInfoResponse, error) {
+func (c *UserServiceHTTPClientImpl) GetUserInfo(ctx context.Context, in *GetUserInfoRequest, opts ...http.CallOption) (*GetUserInfoResponse, error) {
 	var out GetUserInfoResponse
 	pattern := "/api/user/info"
 	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationChannelRechargePanelGetUserInfo))
+	opts = append(opts, http.Operation(OperationUserServiceGetUserInfo))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -100,11 +100,11 @@ func (c *ChannelRechargePanelHTTPClientImpl) GetUserInfo(ctx context.Context, in
 	return &out, nil
 }
 
-func (c *ChannelRechargePanelHTTPClientImpl) Login(ctx context.Context, in *LoginRequest, opts ...http.CallOption) (*LoginResponse, error) {
+func (c *UserServiceHTTPClientImpl) Login(ctx context.Context, in *LoginRequest, opts ...http.CallOption) (*LoginResponse, error) {
 	var out LoginResponse
 	pattern := "/api/user/login"
 	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationChannelRechargePanelLogin))
+	opts = append(opts, http.Operation(OperationUserServiceLogin))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

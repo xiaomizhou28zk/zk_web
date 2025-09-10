@@ -9,6 +9,8 @@ import (
 func main() {
 	r := gin.Default()
 
+	pb.RegisterChannelRechargePanelHTTPServer()
+
 	// 注册生成的路由，并绑定实际处理器
 	pb.RegisterBookServiceHandlers(r, &pb.BookServiceHandlers{
 		GetBookList: handler.GetBookList, // 绑定获取列表的处理器

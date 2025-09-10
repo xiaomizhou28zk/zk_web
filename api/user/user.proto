@@ -6,7 +6,7 @@ import "validate/validate.proto";
 
 option go_package = "github.com/xiaomizhou28zk/zk_web/api/user;user";
 
-service ChannelRechargePanel {
+service UserService {
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
     option (google.api.http) = {
       get: "/api/user/info"

@@ -3,14 +3,14 @@
 
 openapi: 3.0.3
 info:
-    title: ChannelRechargePanel API
+    title: UserService API
     version: 0.0.1
 paths:
     /api/user/info:
         get:
             tags:
-                - ChannelRechargePanel
-            operationId: ChannelRechargePanel_GetUserInfo
+                - UserService
+            operationId: UserService_GetUserInfo
             responses:
                 "200":
                     description: OK
@@ -21,8 +21,8 @@ paths:
     /api/user/login:
         post:
             tags:
-                - ChannelRechargePanel
-            operationId: ChannelRechargePanel_Login
+                - UserService
+            operationId: UserService_Login
             requestBody:
                 content:
                     application/json:
@@ -48,4 +48,4 @@ components:
             type: object
             properties: {}
 tags:
-    - name: ChannelRechargePanel
+    - name: UserService
