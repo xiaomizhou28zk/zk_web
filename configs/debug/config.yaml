@@ -3,5 +3,5 @@ mysql:
     db_name: "user"
     config:
         master:
-          dsn: "root:88888888@tcp(mysql:30006)/user?charset=utf8mb4"
+          dsn: "root:88888888@tcp(mysql:3306)/user?charset=utf8mb4"
         is_debug: true
