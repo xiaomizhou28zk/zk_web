@@ -28,4 +28,4 @@ COPY --from=builder /app/ /app/
 EXPOSE 8080 8443
 
 # 运行程序
-CMD ["/app/hello-world"]
+CMD ["/app/server"]

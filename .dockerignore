@@ -4,7 +4,6 @@
 
 # 忽略Go模块缓存和依赖目录
 vendor/
-go.sum
 *.mod.cache
 
 # 忽略构建产物
