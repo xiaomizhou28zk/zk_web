@@ -11,9 +11,9 @@ import (
 // WireServer init kratos application.
 func WireServer() (*kratos.App, func(), error) {
 	panic(wire.Build(
-		// ConfigProviderSet,
-		// BaseClientProviderSet,
-		// RepositoryProviderSet,
+		ConfigProviderSet,
+		BaseClientProviderSet,
+		RepositoryProviderSet,
 		// DomainServiceProviderSet,
 		APPServiceProviderSet,
 		ServerProviderSet,

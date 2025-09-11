@@ -9,17 +9,29 @@ package wire
 import (
 	"github.com/go-kratos/kratos/v2"
 	"github.com/xiaomizhou28zk/zk_web/internal/app_entrance/server/http"
-	"github.com/xiaomizhou28zk/zk_web/internal/application/user"
+	user2 "github.com/xiaomizhou28zk/zk_web/internal/application/user"
+	"github.com/xiaomizhou28zk/zk_web/internal/clients"
+	"github.com/xiaomizhou28zk/zk_web/internal/config"
+	"github.com/xiaomizhou28zk/zk_web/internal/repository/user"
+	"github.com/xiaomizhou28zk/zk_web/internal/repository/user/storage"
 )
 
 // Injectors from wire.go:
 
 // WireServer init kratos application.
 func WireServer() (*kratos.App, func(), error) {
-	userService := user.NewUserService()
+	userMysqlConfig := config.GetUserMysqlConfig()
+	userMysqlClient, cleanup, err := clients.NewUserMysqlClient(userMysqlConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	userMysqlStorage := storage.NewUserMysqlStorage(userMysqlClient)
+	repository := user.NewRepository(userMysqlStorage)
+	userService := user2.NewUserService(repository)
 	register := http.NewRegister(userService)
 	server := http.NewServer(register)
 	app := newServer(server)
 	return app, func() {
+		cleanup()
 	}, nil
 }

@@ -8,6 +8,11 @@ import (
 	"github.com/google/wire"
 	"github.com/xiaomizhou28zk/zk_web/internal/app_entrance/server/http"
 	"github.com/xiaomizhou28zk/zk_web/internal/application/user"
+	userApp "github.com/xiaomizhou28zk/zk_web/internal/application/user"
+	"github.com/xiaomizhou28zk/zk_web/internal/clients"
+	"github.com/xiaomizhou28zk/zk_web/internal/config"
+	userRepo "github.com/xiaomizhou28zk/zk_web/internal/repository/user"
+	userStorage "github.com/xiaomizhou28zk/zk_web/internal/repository/user/storage"
 )
 
 var (
@@ -18,11 +23,20 @@ var (
 	id, _   = os.Hostname()
 )
 
-var ConfigProviderSet = wire.NewSet()
+var ConfigProviderSet = wire.NewSet(
+	config.GetUserMysqlConfig,
+)
 
-var BaseClientProviderSet = wire.NewSet()
+var BaseClientProviderSet = wire.NewSet(
+	clients.NewUserMysqlClient,
+)
 
-var RepositoryProviderSet = wire.NewSet()
+var RepositoryProviderSet = wire.NewSet(
+	userStorage.NewUserMysqlStorage,
+	wire.Bind(new(userRepo.UserStorage), new(*userStorage.UserMysqlStorage)),
+	userRepo.NewRepository,
+	wire.Bind(new(userApp.UserRepository), new(*userRepo.Repository)),
+)
 
 var DomainServiceProviderSet = wire.NewSet()
 

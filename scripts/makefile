@@ -20,6 +20,22 @@ CHECK_TOOLS := protoc protoc-gen-go protoc-gen-go-http protoc-gen-openapi protoc
 # 默认目标
 all: check-tools install-deps api
 
+
+init:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
+	go install github.com/go-kratos/kratos/cmd/kratos/v2@latest
+	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
+	go install github.com/favadi/protoc-go-inject-tag@latest
+	go install github.com/google/gnostic/cmd/protoc-gen-openapi@v0.6.9
+	go install github.com/golang/mock/mockgen@v1.6.0
+	go install xorm.io/reverse@latest
+	go install github.com/hisheng/xormmodel@latest
+	go install github.com/envoyproxy/protoc-gen-validate@latest
+	go install mvdan.cc/gofumpt@latest
+	go install codeup.aliyun.com/qimao/go-contrib/protoc-gen-go-enum@latest
+	go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
+
 # 检查工具是否安装
 check-tools:
 	@echo "Checking required tools..."
