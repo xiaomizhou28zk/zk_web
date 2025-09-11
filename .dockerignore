@@ -1,0 +1,29 @@
+# 忽略版本控制目录
+.git
+.gitignore
+
+# 忽略Go模块缓存和依赖目录
+vendor/
+go.sum
+*.mod.cache
+
+# 忽略构建产物
+
+# 忽略IDE配置文件
+.idea/
+.vscode/
+*.iml
+
+# 忽略日志和临时文件
+logs/
+log/
+tmp/
+*.log
+
+# 忽略操作系统特定文件
+.DS_Store
+Thumbs.db
+
+# 可以根据需要添加其他要忽略的文件
+# secret.txt
+# config/dev/
