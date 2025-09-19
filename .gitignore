@@ -1,6 +1,5 @@
 *.log
 /log/
-server
 .vscode/
 .idea
 *.rdb
