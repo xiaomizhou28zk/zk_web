@@ -18,7 +18,7 @@ type Config struct {
 }
 
 type Mysql struct {
-	User xmysql.Config `yaml:"user"`
+	Blog xmysql.Config `yaml:"blog"`
 }
 
 // 全局配置实例（通过指针原子更新）

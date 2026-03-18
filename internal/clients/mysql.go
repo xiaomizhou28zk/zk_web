@@ -6,7 +6,7 @@ import (
 	"github.com/xiaomizhou28zk/zk_web/internal/pkg/xmysql"
 )
 
-func NewUserMysqlClient(cfg config.UserMysqlConfig) (infra.UserMysqlClient, func(), error) {
+func NewBlogMysqlClient(cfg config.BlogMysqlConfig) (infra.BlogMysqlClient, func(), error) {
 	client, cleanup, err := xmysql.NewClient(
 		xmysql.Config(cfg),
 	)

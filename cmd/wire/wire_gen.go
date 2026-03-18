@@ -20,12 +20,12 @@ import (
 
 // WireServer init kratos application.
 func WireServer() (*kratos.App, func(), error) {
-	userMysqlConfig := config.GetUserMysqlConfig()
-	userMysqlClient, cleanup, err := clients.NewUserMysqlClient(userMysqlConfig)
+	blogMysqlConfig := config.GetBlogMysqlConfig()
+	blogMysqlClient, cleanup, err := clients.NewBlogMysqlClient(blogMysqlConfig)
 	if err != nil {
 		return nil, nil, err
 	}
-	userMysqlStorage := storage.NewUserMysqlStorage(userMysqlClient)
+	userMysqlStorage := storage.NewUserMysqlStorage(blogMysqlClient)
 	repository := user.NewRepository(userMysqlStorage)
 	userService := user2.NewUserService(repository)
 	register := http.NewRegister(userService)

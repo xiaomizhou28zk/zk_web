@@ -1,34 +1,35 @@
-syntax = "proto3";  //语法声明
-package api; //包名
+syntax = "proto3";
+
+package blog.v1;
 
 import "google/api/annotations.proto";
-import "validate/validate.proto";
 
-option go_package = "github.com/xiaomizhou28zk/zk_web/api/user;user";
+option go_package = "yourmodule/blog/v1;blogv1";
 
+// =============================================================================
+// 个人信息
+// =============================================================================
+
+// User 当前登录用户信息（顶栏头像、弹窗、个人资料页等使用）
+message User {
+  string id = 1;        // 用户唯一标识，后端生成
+  string nickname = 2; // 昵称，展示在顶栏与评论身份
+  string avatar = 3;   // 头像：emoji 或 URL
+  string bio = 4;      // 个人简介/签名，展示在头像弹窗中
+}
+
+// GetCurrentUserRequest 获取当前用户请求（无需参数，依赖鉴权 token/session）
+message GetCurrentUserRequest {}
+
+// GetCurrentUserResponse 获取当前用户响应
+message GetCurrentUserResponse {
+  User user = 1; // 已登录时返回用户信息；未登录时为空，前端展示「未登录」等
+}
+
+// UserService 个人信息服务
 service UserService {
-  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
-    option (google.api.http) = {
-      get: "/api/user/info"
-    };
-  }
-
-  rpc Login(LoginRequest) returns (LoginResponse) {
-    option (google.api.http) = {
-      post: "/api/user/login"
-      body: "*"
-    };
+  // 获取当前登录用户信息，用于顶栏、弹窗、个人资料与评论身份展示
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
+    option (google.api.http) = { get: "/api/user/me" };
   }
 }
-
-message GetUserInfoRequest {}
-
-message GetUserInfoResponse{
-  string name = 1;
-  string email = 2;
-  string avatar = 3;
-}
-
-message LoginRequest{}
-
-message LoginResponse{}

@@ -3,7 +3,6 @@ module github.com/xiaomizhou28zk/zk_web
 go 1.24.0
 
 require (
-	github.com/envoyproxy/protoc-gen-validate v1.2.1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-kratos/kratos/v2 v2.8.4
 	github.com/go-sql-driver/mysql v1.9.3

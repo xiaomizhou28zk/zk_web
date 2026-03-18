@@ -11,12 +11,12 @@ import (
 )
 
 type UserMysqlStorage struct {
-	mysqlClient infra.UserMysqlClient
+	mysqlClient infra.BlogMysqlClient
 }
 
 var _ user.UserStorage = (*UserMysqlStorage)(nil)
 
-func NewUserMysqlStorage(mysqlClient infra.UserMysqlClient) *UserMysqlStorage {
+func NewUserMysqlStorage(mysqlClient infra.BlogMysqlClient) *UserMysqlStorage {
 	return &UserMysqlStorage{
 		mysqlClient: mysqlClient,
 	}

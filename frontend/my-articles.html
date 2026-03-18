@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的文章</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header-inner">
+      <div class="header-left">
+        <a href="index.html" class="logo">📚 技术博客</a>
+        <a href="index.html" class="nav-home">首页</a>
+      </div>
+      <div class="header-right">
+        <div class="nav-add-wrap">
+          <button type="button" class="nav-add-btn" aria-expanded="false" aria-haspopup="true" aria-label="发表">
+            <span class="nav-add-icon">+</span>
+          </button>
+          <div class="nav-add-dropdown">
+            <a href="publish.html" class="nav-add-action">✏️ 写文章</a>
+          </div>
+        </div>
+        <span id="header-user" class="header-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content main-content-my-articles">
+    <h1 class="page-title">我的文章</h1>
+    <div id="my-articles-list" class="my-articles-list"></div>
+    <div class="pagination-bar">
+      <div class="page-size-wrap">
+        <label for="page-size">每页</label>
+        <select id="page-size" class="page-size-select" aria-label="每页显示篇数">
+          <option value="10">10 篇</option>
+          <option value="20">20 篇</option>
+          <option value="50">50 篇</option>
+        </select>
+      </div>
+      <nav id="pagination" class="pagination" aria-label="分页"></nav>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">© 2025 技术博客 · 仅供演示</div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/header-user.js"></script>
+  <script src="js/my-articles.js"></script>
+</body>
+</html>

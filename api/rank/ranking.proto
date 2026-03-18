@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package blog.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "yourmodule/blog/v1;blogv1";
+
+// =============================================================================
+// 榜单
+// =============================================================================
+
+// HotRankType 热度榜统计维度
+enum HotRankType {
+  HOT_RANK_UNSPECIFIED = 0;
+  TOTAL = 1; // 总榜：按全部历史浏览次数排序
+  WEEK = 2;  // 周榜：仅统计过去 7 天内的浏览次数
+  DAY = 3;  // 日榜：仅统计过去 24 小时内的浏览次数
+}
+
+// HotRankItem 热度榜单项（文章 ID + 浏览次数）
+message HotRankItem {
+  int64 article_id = 1; // 文章 ID，前端用于展示标题与跳转
+  int64 views = 2;      // 在该统计维度下的浏览次数
+}
+
+// GetHotRankingRequest 获取热度榜请求（首页侧栏：总榜 / 周榜 / 日榜）
+message GetHotRankingRequest {
+  HotRankType type = 1; // TOTAL / WEEK / DAY
+  int32 limit = 2;      // 返回条数，默认 10
+}
+
+// GetHotRankingResponse 热度榜响应
+message GetHotRankingResponse {
+  repeated HotRankItem items = 1; // 按浏览次数降序排列，最多 limit 条
+}
+
+// RankingService 榜单服务
+service RankingService {
+  // 获取热度榜：总榜 / 周榜 / 日榜，按浏览次数降序
+  rpc GetHotRanking(GetHotRankingRequest) returns (GetHotRankingResponse) {
+    option (google.api.http) = { get: "/api/articles/ranking" };
+  }
+}

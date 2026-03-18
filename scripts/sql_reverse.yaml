@@ -6,7 +6,7 @@ kind: reverse
 name: mydb
 source:
   database: mysql
-  conn_str: "root:88888888@tcp(192.168.134.128:30006)/user?charset=utf8mb4"
+  conn_str: "root:88888888@tcp(192.168.134.128:30006)/blog?charset=utf8mb4"
 targets:
   - type: codes
     language: golang

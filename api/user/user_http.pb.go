@@ -4,7 +4,7 @@
 // - protoc             v3.21.9
 // source: user/user.proto
 
-package user
+package blogv1
 
 import (
 	context "context"
@@ -19,64 +19,40 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
-const OperationUserServiceGetUserInfo = "/api.UserService/GetUserInfo"
-const OperationUserServiceLogin = "/api.UserService/Login"
+const OperationUserServiceGetCurrentUser = "/blog.v1.UserService/GetCurrentUser"
 
 type UserServiceHTTPServer interface {
-	GetUserInfo(context.Context, *GetUserInfoRequest) (*GetUserInfoResponse, error)
-	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	// GetCurrentUser 获取当前登录用户信息，用于顶栏、弹窗、个人资料与评论身份展示
+	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 }
 
 func RegisterUserServiceHTTPServer(s *http.Server, srv UserServiceHTTPServer) {
 	r := s.Route("/")
-	r.GET("/api/user/info", _UserService_GetUserInfo0_HTTP_Handler(srv))
-	r.POST("/api/user/login", _UserService_Login0_HTTP_Handler(srv))
+	r.GET("/api/user/me", _UserService_GetCurrentUser0_HTTP_Handler(srv))
 }
 
-func _UserService_GetUserInfo0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+func _UserService_GetCurrentUser0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in GetUserInfoRequest
+		var in GetCurrentUserRequest
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, OperationUserServiceGetUserInfo)
+		http.SetOperation(ctx, OperationUserServiceGetCurrentUser)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.GetUserInfo(ctx, req.(*GetUserInfoRequest))
+			return srv.GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
 			return err
 		}
-		reply := out.(*GetUserInfoResponse)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _UserService_Login0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in LoginRequest
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationUserServiceLogin)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.Login(ctx, req.(*LoginRequest))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*LoginResponse)
+		reply := out.(*GetCurrentUserResponse)
 		return ctx.Result(200, reply)
 	}
 }
 
 type UserServiceHTTPClient interface {
-	GetUserInfo(ctx context.Context, req *GetUserInfoRequest, opts ...http.CallOption) (rsp *GetUserInfoResponse, err error)
-	Login(ctx context.Context, req *LoginRequest, opts ...http.CallOption) (rsp *LoginResponse, err error)
+	// GetCurrentUser 获取当前登录用户信息，用于顶栏、弹窗、个人资料与评论身份展示
+	GetCurrentUser(ctx context.Context, req *GetCurrentUserRequest, opts ...http.CallOption) (rsp *GetCurrentUserResponse, err error)
 }
 
 type UserServiceHTTPClientImpl struct {
@@ -87,26 +63,14 @@ func NewUserServiceHTTPClient(client *http.Client) UserServiceHTTPClient {
 	return &UserServiceHTTPClientImpl{client}
 }
 
-func (c *UserServiceHTTPClientImpl) GetUserInfo(ctx context.Context, in *GetUserInfoRequest, opts ...http.CallOption) (*GetUserInfoResponse, error) {
-	var out GetUserInfoResponse
-	pattern := "/api/user/info"
+// GetCurrentUser 获取当前登录用户信息，用于顶栏、弹窗、个人资料与评论身份展示
+func (c *UserServiceHTTPClientImpl) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...http.CallOption) (*GetCurrentUserResponse, error) {
+	var out GetCurrentUserResponse
+	pattern := "/api/user/me"
 	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationUserServiceGetUserInfo))
+	opts = append(opts, http.Operation(OperationUserServiceGetCurrentUser))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *UserServiceHTTPClientImpl) Login(ctx context.Context, in *LoginRequest, opts ...http.CallOption) (*LoginResponse, error) {
-	var out LoginResponse
-	pattern := "/api/user/login"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationUserServiceLogin))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

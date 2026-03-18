@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>个人信息</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header-inner">
+      <div class="header-left">
+        <a href="index.html" class="logo">📚 技术博客</a>
+        <a href="index.html" class="nav-home">首页</a>
+      </div>
+      <div class="header-right">
+        <span id="header-user" class="header-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content profile-page">
+    <h1 class="page-title">个人信息</h1>
+    <div id="profile-loading" class="profile-loading">加载中…</div>
+    <div id="profile-card" class="profile-card" style="display:none">
+      <span id="card-avatar" class="card-avatar">👤</span>
+      <div class="card-info">
+        <strong id="card-nickname" class="card-nickname"></strong>
+        <p id="card-bio" class="card-bio"></p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">© 2025 技术博客 · 仅供演示</div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/header-user.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>

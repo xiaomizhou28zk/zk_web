@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package blog.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "yourmodule/blog/v1;blogv1";
+
+// =============================================================================
+// 评论回复
+// =============================================================================
+
+// Reply 单条回复（嵌套在评论下，支持多级：回复的回复）
+message Reply {
+  string id = 1;           // 回复唯一 ID
+  string author = 2;       // 回复者昵称
+  string content = 3;      // 回复内容纯文本
+  string time = 4;         // 回复时间，如 "2025-03-15 16:30"
+  repeated Reply replies = 5; // 子回复列表，递归嵌套
+}
+
+// Comment 单条评论（文章详情页评论列表项）
+message Comment {
+  string id = 1;           // 评论唯一 ID
+  string author = 2;       // 评论者昵称
+  string content = 3;       // 评论内容
+  string time = 4;         // 评论时间
+  repeated Reply replies = 5; // 该评论下的回复列表（含嵌套）
+}
+
+// ListCommentsRequest 获取某文章的评论列表请求
+message ListCommentsRequest {
+  int64 article_id = 1; // 文章 ID
+}
+
+// ListCommentsResponse 评论列表响应
+message ListCommentsResponse {
+  repeated Comment comments = 1; // 该文章下所有评论，按时间正序或倒序由后端约定
+}
+
+// AddCommentRequest 发表评论请求（在文章详情页提交主评论）
+message AddCommentRequest {
+  int64 article_id = 1; // 文章 ID
+  string content = 2;   // 评论内容，必填
+}
+
+// AddCommentResponse 发表评论响应
+message AddCommentResponse {
+  Comment comment = 1; // 包含后端生成的 id、time 等，前端用于追加展示
+}
+
+// AddReplyRequest 发表回复请求（对某条评论或某条回复进行回复）
+message AddReplyRequest {
+  int64 article_id = 1;       // 文章 ID
+  string comment_id = 2;      // 所属主评论 ID
+  string parent_reply_id = 3; // 若为空表示回复主评论；非空表示回复某条回复（可支持多级）
+  string content = 4;         // 回复内容，必填
+}
+
+// AddReplyResponse 发表回复响应
+message AddReplyResponse {
+  Reply reply = 1; // 包含后端生成的 id、time 等，前端用于追加到对应评论/回复下
+}
+
+// CommentService 评论回复服务
+service CommentService {
+  // 某篇文章的评论列表（含嵌套回复），用于详情页评论区展示（article_id 通过 query 传递）
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse) {
+    option (google.api.http) = { get: "/api/articles/comments" };
+  }
+
+  // 发表主评论（article_id 在 body 中）
+  rpc AddComment(AddCommentRequest) returns (AddCommentResponse) {
+    option (google.api.http) = {
+      post: "/api/articles/comments"
+      body: "*"
+    };
+  }
+
+  // 发表回复（对主评论或对某条回复），article_id、comment_id 在 body 中
+  rpc AddReply(AddReplyRequest) returns (AddReplyResponse) {
+    option (google.api.http) = {
+      post: "/api/articles/comments/replies"
+      body: "*"
+    };
+  }
+}

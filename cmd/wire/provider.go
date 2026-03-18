@@ -24,11 +24,11 @@ var (
 )
 
 var ConfigProviderSet = wire.NewSet(
-	config.GetUserMysqlConfig,
+	config.GetBlogMysqlConfig,
 )
 
 var BaseClientProviderSet = wire.NewSet(
-	clients.NewUserMysqlClient,
+	clients.NewBlogMysqlClient,
 )
 
 var RepositoryProviderSet = wire.NewSet(

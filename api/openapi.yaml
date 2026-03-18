@@ -3,31 +3,46 @@
 
 openapi: 3.0.3
 info:
-    title: UserService API
+    title: ""
     version: 0.0.1
 paths:
-    /api/user/info:
+    /api/articles:
         get:
             tags:
-                - UserService
-            operationId: UserService_GetUserInfo
+                - ArticleService
+            description: 文章列表：首页推荐与瀑布流，支持关键词搜索与游标分页
+            operationId: ArticleService_ListArticles
+            parameters:
+                - name: q
+                  in: query
+                  schema:
+                    type: string
+                - name: cursor
+                  in: query
+                  schema:
+                    type: string
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/api.GetUserInfoResponse'
-    /api/user/login:
+                                $ref: '#/components/schemas/blog.v1.ListArticlesResponse'
         post:
             tags:
-                - UserService
-            operationId: UserService_Login
+                - ArticleService
+            description: 创建文章：新写一篇，可保存为草稿或直接发布
+            operationId: ArticleService_CreateArticle
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/api.LoginRequest'
+                            $ref: '#/components/schemas/blog.v1.CreateArticleRequest'
                 required: true
             responses:
                 "200":
@@ -35,23 +50,500 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/api.LoginResponse'
+                                $ref: '#/components/schemas/blog.v1.CreateArticleResponse'
+    /api/articles/comments:
+        get:
+            tags:
+                - CommentService
+            description: 某篇文章的评论列表（含嵌套回复），用于详情页评论区展示（article_id 通过 query 传递）
+            operationId: CommentService_ListComments
+            parameters:
+                - name: article_id
+                  in: query
+                  schema:
+                    type: integer
+                    format: int64
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.ListCommentsResponse'
+        post:
+            tags:
+                - CommentService
+            description: 发表主评论（article_id 在 body 中）
+            operationId: CommentService_AddComment
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.AddCommentRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.AddCommentResponse'
+    /api/articles/comments/replies:
+        post:
+            tags:
+                - CommentService
+            description: 发表回复（对主评论或对某条回复），article_id、comment_id 在 body 中
+            operationId: CommentService_AddReply
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.AddReplyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.AddReplyResponse'
+    /api/articles/detail:
+        get:
+            tags:
+                - ArticleService
+            description: 文章详情：单篇元数据 + 正文 HTML，用于文章详情页（id 通过 query 传递）
+            operationId: ArticleService_GetArticle
+            parameters:
+                - name: id
+                  in: query
+                  schema:
+                    type: integer
+                    format: int64
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.GetArticleResponse'
+    /api/articles/mine:
+        get:
+            tags:
+                - ArticleService
+            description: 我的文章列表：当前用户创建的文章（含草稿），支持分页
+            operationId: ArticleService_ListMyArticles
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.ListMyArticlesResponse'
+    /api/articles/ranking:
+        get:
+            tags:
+                - RankingService
+            description: 获取热度榜：总榜 / 周榜 / 日榜，按浏览次数降序
+            operationId: RankingService_GetHotRanking
+            parameters:
+                - name: type
+                  in: query
+                  schema:
+                    type: integer
+                    format: enum
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.GetHotRankingResponse'
+    /api/articles/update:
+        post:
+            tags:
+                - ArticleService
+            description: 更新文章：编辑已有文章，可修改标题/简介/封面/正文/状态（草稿或发布），id 在 body 中
+            operationId: ArticleService_UpdateArticle
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.UpdateArticleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.UpdateArticleResponse'
+    /api/articles/view:
+        post:
+            tags:
+                - ArticleService
+            description: 记录文章被浏览一次，用于热度榜统计（article_id 在 body 中）
+            operationId: ArticleService_RecordView
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.RecordViewRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.RecordViewResponse'
+    /api/auth/login:
+        post:
+            tags:
+                - AuthService
+            description: 登录：账号或邮箱 + 密码，返回 token 及可选 user
+            operationId: AuthService_Login
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.LoginRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.LoginResponse'
+    /api/auth/logout:
+        post:
+            tags:
+                - AuthService
+            description: 退出登录：服务端使当前 token 失效（可选）
+            operationId: AuthService_Logout
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.LogoutResponse'
+    /api/auth/register:
+        post:
+            tags:
+                - AuthService
+            description: 注册新用户：昵称、账号、密码，返回 token 及可选 user
+            operationId: AuthService_Register
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.RegisterRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.RegisterResponse'
+    /api/user/me:
+        get:
+            tags:
+                - UserService
+            description: 获取当前登录用户信息，用于顶栏、弹窗、个人资料与评论身份展示
+            operationId: UserService_GetCurrentUser
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.GetCurrentUserResponse'
 components:
     schemas:
-        api.GetUserInfoResponse:
+        blog.v1.AddCommentRequest:
+            type: object
+            properties:
+                article_id:
+                    type: integer
+                    format: int64
+                content:
+                    type: string
+            description: AddCommentRequest 发表评论请求（在文章详情页提交主评论）
+        blog.v1.AddCommentResponse:
+            type: object
+            properties:
+                comment:
+                    $ref: '#/components/schemas/blog.v1.Comment'
+            description: AddCommentResponse 发表评论响应
+        blog.v1.AddReplyRequest:
+            type: object
+            properties:
+                article_id:
+                    type: integer
+                    format: int64
+                comment_id:
+                    type: string
+                parent_reply_id:
+                    type: string
+                content:
+                    type: string
+            description: AddReplyRequest 发表回复请求（对某条评论或某条回复进行回复）
+        blog.v1.AddReplyResponse:
+            type: object
+            properties:
+                reply:
+                    $ref: '#/components/schemas/blog.v1.Reply'
+            description: AddReplyResponse 发表回复响应
+        blog.v1.Article:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int64
+                title:
+                    type: string
+                summary:
+                    type: string
+                author:
+                    $ref: '#/components/schemas/blog.v1.Author'
+                published_at:
+                    type: string
+                cover:
+                    type: string
+                status:
+                    type: integer
+                    format: enum
+            description: Article 文章元数据（不含正文，用于列表、卡片、我的文章列表等）
+        blog.v1.Author:
             type: object
             properties:
                 name:
                     type: string
-                email:
+                avatar:
+                    type: string
+            description: Author 文章作者信息（用于列表与详情展示）
+        blog.v1.Comment:
+            type: object
+            properties:
+                id:
+                    type: string
+                author:
+                    type: string
+                content:
+                    type: string
+                time:
+                    type: string
+                replies:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/blog.v1.Reply'
+            description: Comment 单条评论（文章详情页评论列表项）
+        blog.v1.CreateArticleRequest:
+            type: object
+            properties:
+                title:
+                    type: string
+                summary:
+                    type: string
+                cover:
+                    type: string
+                body_html:
+                    type: string
+                status:
+                    type: integer
+                    format: enum
+            description: CreateArticleRequest 创建文章请求（发表页：新写一篇或保存草稿）
+        blog.v1.CreateArticleResponse:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int64
+            description: CreateArticleResponse 创建文章响应
+        blog.v1.GetArticleResponse:
+            type: object
+            properties:
+                article:
+                    $ref: '#/components/schemas/blog.v1.Article'
+                body_html:
+                    type: string
+            description: GetArticleResponse 获取单篇文章详情响应
+        blog.v1.GetCurrentUserResponse:
+            type: object
+            properties:
+                user:
+                    $ref: '#/components/schemas/blog.v1.User'
+            description: GetCurrentUserResponse 获取当前用户响应
+        blog.v1.GetHotRankingResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/blog.v1.HotRankItem'
+            description: GetHotRankingResponse 热度榜响应
+        blog.v1.HotRankItem:
+            type: object
+            properties:
+                article_id:
+                    type: integer
+                    format: int64
+                views:
+                    type: integer
+                    format: int64
+            description: HotRankItem 热度榜单项（文章 ID + 浏览次数）
+        blog.v1.ListArticlesResponse:
+            type: object
+            properties:
+                articles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/blog.v1.Article'
+                next_cursor:
+                    type: string
+            description: ListArticlesResponse 文章列表响应
+        blog.v1.ListCommentsResponse:
+            type: object
+            properties:
+                comments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/blog.v1.Comment'
+            description: ListCommentsResponse 评论列表响应
+        blog.v1.ListMyArticlesResponse:
+            type: object
+            properties:
+                articles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/blog.v1.Article'
+                total:
+                    type: integer
+                    format: int32
+            description: ListMyArticlesResponse 我的文章列表响应
+        blog.v1.LoginRequest:
+            type: object
+            properties:
+                account:
+                    type: string
+                password:
+                    type: string
+            description: LoginRequest 登录请求（POST /api/auth/login）
+        blog.v1.LoginResponse:
+            type: object
+            properties:
+                token:
+                    type: string
+            description: LoginResponse 登录响应
+        blog.v1.LogoutResponse:
+            type: object
+            properties: {}
+            description: LogoutResponse 退出登录响应（无 body 或仅返回成功即可）
+        blog.v1.RecordViewRequest:
+            type: object
+            properties:
+                article_id:
+                    type: integer
+                    format: int64
+            description: RecordViewRequest 记录文章浏览次数请求（进入文章详情页时调用，用于热度统计）
+        blog.v1.RecordViewResponse:
+            type: object
+            properties: {}
+            description: RecordViewResponse 记录浏览响应（无 body 或仅返回成功即可）
+        blog.v1.RegisterRequest:
+            type: object
+            properties:
+                nickname:
+                    type: string
+                account:
+                    type: string
+                password:
+                    type: string
+            description: RegisterRequest 注册请求（POST /api/auth/register）
+        blog.v1.RegisterResponse:
+            type: object
+            properties:
+                token:
+                    type: string
+            description: RegisterResponse 注册响应（与登录一致）
+        blog.v1.Reply:
+            type: object
+            properties:
+                id:
+                    type: string
+                author:
+                    type: string
+                content:
+                    type: string
+                time:
+                    type: string
+                replies:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/blog.v1.Reply'
+            description: Reply 单条回复（嵌套在评论下，支持多级：回复的回复）
+        blog.v1.UpdateArticleRequest:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int64
+                title:
+                    type: string
+                summary:
+                    type: string
+                cover:
+                    type: string
+                body_html:
+                    type: string
+                status:
+                    type: integer
+                    format: enum
+            description: UpdateArticleRequest 更新文章请求（编辑已有文章：保存草稿或发布）
+        blog.v1.UpdateArticleResponse:
+            type: object
+            properties:
+                ok:
+                    type: boolean
+            description: UpdateArticleResponse 更新文章响应
+        blog.v1.User:
+            type: object
+            properties:
+                id:
+                    type: string
+                nickname:
                     type: string
                 avatar:
                     type: string
-        api.LoginRequest:
-            type: object
-            properties: {}
-        api.LoginResponse:
-            type: object
-            properties: {}
+                bio:
+                    type: string
+            description: User 当前登录用户信息（顶栏头像、弹窗、个人资料页等使用）
 tags:
+    - name: ArticleService
+      description: ArticleService 文章服务
+    - name: AuthService
+      description: AuthService 登录鉴权服务
+    - name: CommentService
+      description: CommentService 评论回复服务
+    - name: RankingService
+      description: RankingService 榜单服务
     - name: UserService
+      description: UserService 个人信息服务

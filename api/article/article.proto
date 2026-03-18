@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+package blog.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "yourmodule/blog/v1;blogv1";
+
+// =============================================================================
+// 文章
+// =============================================================================
+
+// ArticleStatus 文章发布状态
+enum ArticleStatus {
+  ARTICLE_STATUS_UNSPECIFIED = 0;
+  DRAFT = 1;     // 草稿，仅作者可见，不展示在首页列表
+  PUBLISHED = 2; // 已发布，展示在首页并可被所有人查看
+}
+
+// Author 文章作者信息（用于列表与详情展示）
+message Author {
+  string name = 1;  // 作者昵称，如 "小明"
+  string avatar = 2; // 头像：emoji 或图片 URL，如 "👨‍💻"
+}
+
+// Article 文章元数据（不含正文，用于列表、卡片、我的文章列表等）
+message Article {
+  int64 id = 1;            // 文章唯一 ID
+  string title = 2;        // 标题
+  string summary = 3;       // 一句话简介，列表卡片展示
+  Author author = 4;       // 作者信息
+  string published_at = 5; // 发布时间，建议格式 "2025-03-15 14:30"
+  string cover = 6;        // 封面：emoji 或图片 URL，列表卡片展示
+  ArticleStatus status = 7; // 状态：草稿 / 已发布（我的文章列表需返回草稿）
+}
+
+// ListArticlesRequest 文章列表请求（首页推荐精选 + 瀑布流列表、搜索）
+message ListArticlesRequest {
+  string q = 1;        // 搜索关键词，对标题、简介、作者名做模糊匹配；空表示不搜索
+  string cursor = 2;   // 游标分页：上一页返回的 next_cursor，空表示第一页
+  int32 page_size = 3; // 每页条数，如 15；前端瀑布流按页拉取
+}
+
+// ListArticlesResponse 文章列表响应
+message ListArticlesResponse {
+  repeated Article articles = 1; // 当前页文章列表，按发布时间倒序（最新在前）
+  string next_cursor = 2;         // 下一页游标；空表示没有更多
+}
+
+// GetArticleRequest 获取单篇文章详情请求（文章详情页）
+message GetArticleRequest {
+  int64 id = 1; // 文章 ID，来自 URL 参数 id
+}
+
+// GetArticleResponse 获取单篇文章详情响应
+message GetArticleResponse {
+  Article article = 1;  // 文章元数据（标题、作者、时间、封面等）
+  string body_html = 2;  // 正文 HTML 内容，前端直接插入到详情区域
+}
+
+// ListMyArticlesRequest 我的文章列表请求（我的文章页，含草稿与已发布）
+message ListMyArticlesRequest {
+  int32 page = 1;      // 页码，从 1 开始
+  int32 page_size = 2; // 每页条数，如 10 / 20 / 50
+}
+
+// ListMyArticlesResponse 我的文章列表响应
+message ListMyArticlesResponse {
+  repeated Article articles = 1; // 当前用户创建的文章（含草稿与已发布），按更新时间倒序
+  int32 total = 2;               // 总条数，用于前端分页展示
+}
+
+// CreateArticleRequest 创建文章请求（发表页：新写一篇或保存草稿）
+message CreateArticleRequest {
+  string title = 1;         // 标题，必填
+  string summary = 2;       // 简介，必填
+  string cover = 3;         // 封面，可为空（前端默认 "📝"）
+  string body_html = 4;     // 正文 HTML（如 Quill 产出）
+  ArticleStatus status = 5; // DRAFT=保存草稿，PUBLISHED=发布；发布时后端可写入 published_at
+}
+
+// CreateArticleResponse 创建文章响应
+message CreateArticleResponse {
+  int64 id = 1; // 新文章 ID，前端用于跳转详情或我的文章列表
+}
+
+// UpdateArticleRequest 更新文章请求（编辑已有文章：保存草稿或发布）
+message UpdateArticleRequest {
+  int64 id = 1;                       // 文章 ID，仅能更新当前用户自己的文章
+  optional string title = 2;          // 新标题，不更新则省略
+  optional string summary = 3;         // 新简介
+  optional string cover = 4;          // 新封面
+  optional string body_html = 5;      // 新正文 HTML
+  optional ArticleStatus status = 6;  // 更新为草稿或已发布；改为 PUBLISHED 时若无 published_at 可补全
+}
+
+// UpdateArticleResponse 更新文章响应
+message UpdateArticleResponse {
+  bool ok = 1; // 是否更新成功；失败时可由 RPC 或 HTTP 状态码表达原因（如 403 非本人）
+}
+
+// RecordViewRequest 记录文章浏览次数请求（进入文章详情页时调用，用于热度统计）
+message RecordViewRequest {
+  int64 article_id = 1; // 文章 ID；后端可按用户/会话去重，避免刷量
+}
+
+// RecordViewResponse 记录浏览响应（无 body 或仅返回成功即可）
+message RecordViewResponse {}
+
+// ArticleService 文章服务
+service ArticleService {
+  // 文章列表：首页推荐与瀑布流，支持关键词搜索与游标分页
+  rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse) {
+    option (google.api.http) = { get: "/api/articles" };
+  }
+
+  // 文章详情：单篇元数据 + 正文 HTML，用于文章详情页（id 通过 query 传递）
+  rpc GetArticle(GetArticleRequest) returns (GetArticleResponse) {
+    option (google.api.http) = { get: "/api/articles/detail" };
+  }
+
+  // 我的文章列表：当前用户创建的文章（含草稿），支持分页
+  rpc ListMyArticles(ListMyArticlesRequest) returns (ListMyArticlesResponse) {
+    option (google.api.http) = { get: "/api/articles/mine" };
+  }
+
+  // 创建文章：新写一篇，可保存为草稿或直接发布
+  rpc CreateArticle(CreateArticleRequest) returns (CreateArticleResponse) {
+    option (google.api.http) = {
+      post: "/api/articles"
+      body: "*"
+    };
+  }
+
+  // 更新文章：编辑已有文章，可修改标题/简介/封面/正文/状态（草稿或发布），id 在 body 中
+  rpc UpdateArticle(UpdateArticleRequest) returns (UpdateArticleResponse) {
+    option (google.api.http) = {
+      post: "/api/articles/update"
+      body: "*"
+    };
+  }
+
+  // 记录文章被浏览一次，用于热度榜统计（article_id 在 body 中）
+  rpc RecordView(RecordViewRequest) returns (RecordViewResponse) {
+    option (google.api.http) = {
+      post: "/api/articles/view"
+      body: "*"
+    };
+  }
+}

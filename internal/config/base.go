@@ -5,9 +5,9 @@ import (
 )
 
 type (
-	UserMysqlConfig xmysql.Config
+	BlogMysqlConfig xmysql.Config
 )
 
-func GetUserMysqlConfig() UserMysqlConfig {
-	return UserMysqlConfig(globalConfig.Mysql.User)
+func GetBlogMysqlConfig() BlogMysqlConfig {
+	return BlogMysqlConfig(globalConfig.Mysql.Blog)
 }

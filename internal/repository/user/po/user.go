@@ -12,6 +12,7 @@ type User struct {
 	Status   int64     `xorm:"not null default 1 comment('用户状态：1 正常 2 禁用') TINYINT"`
 	CreateAt time.Time `xorm:"comment('创建时间') index DATETIME"`
 	UpdateAt time.Time `xorm:"comment('更新时间') index DATETIME"`
+	Account  string    `xorm:"not null default '' comment('账号，也可以是邮箱，全局唯一') unique VARCHAR(255)"`
 }
 
 func (m *User) TableName() string {

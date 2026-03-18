@@ -8,6 +8,7 @@ import (
 func Do2PoUser(d *entity.User) *po.User {
 	return &po.User{
 		Id:       d.Id,
+		Account:  d.Account,
 		Name:     d.Name,
 		Pwd:      d.Pwd,
 		Avatar:   d.Avatar,
@@ -20,6 +21,7 @@ func Do2PoUser(d *entity.User) *po.User {
 func Po2DoUser(p *po.User) *entity.User {
 	return &entity.User{
 		Id:       p.Id,
+		Account:  p.Account,
 		Name:     p.Name,
 		Pwd:      p.Pwd,
 		Avatar:   p.Avatar,

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>文章详情</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header-inner">
+      <div class="header-left">
+        <a href="index.html" class="logo">📚 技术博客</a>
+        <a href="index.html" class="nav-home">首页</a>
+      </div>
+      <div class="header-right">
+        <span id="header-user" class="header-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content article-detail">
+    <a href="index.html" class="back-link">← 返回列表</a>
+    <article id="article-content">
+      <div id="article-meta" class="article-meta"></div>
+      <h1 id="article-title" class="article-title"></h1>
+      <div id="article-body" class="article-body"></div>
+    </article>
+
+    <section class="comments-section">
+      <h2>评论</h2>
+      <div class="comment-form-wrap">
+        <p id="comment-identity" class="comment-identity"></p>
+        <textarea id="comment-content" placeholder="写下你的评论… Enter 发送，Shift+Enter 换行" rows="3"></textarea>
+        <button type="button" id="comment-submit" class="btn btn-primary">发表评论</button>
+      </div>
+      <ul id="comment-list" class="comment-list"></ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">© 2025 技术博客 · 仅供演示</div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/header-user.js"></script>
+  <script src="js/article.js"></script>
+</body>
+</html>
