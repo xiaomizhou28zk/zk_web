@@ -19,11 +19,14 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationAuthServiceChangePassword = "/blog.v1.AuthService/ChangePassword"
 const OperationAuthServiceLogin = "/blog.v1.AuthService/Login"
 const OperationAuthServiceLogout = "/blog.v1.AuthService/Logout"
 const OperationAuthServiceRegister = "/blog.v1.AuthService/Register"
 
 type AuthServiceHTTPServer interface {
+	// ChangePassword 修改密码：校验旧密码后更新为新密码
+	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
 	// Login 登录：账号或邮箱 + 密码，返回 token 及可选 user
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	// Logout 退出登录：服务端使当前 token 失效（可选）
@@ -37,6 +40,7 @@ func RegisterAuthServiceHTTPServer(s *http.Server, srv AuthServiceHTTPServer) {
 	r.POST("/api/auth/login", _AuthService_Login0_HTTP_Handler(srv))
 	r.POST("/api/auth/register", _AuthService_Register0_HTTP_Handler(srv))
 	r.POST("/api/auth/logout", _AuthService_Logout0_HTTP_Handler(srv))
+	r.POST("/api/auth/change-password", _AuthService_ChangePassword0_HTTP_Handler(srv))
 }
 
 func _AuthService_Login0_HTTP_Handler(srv AuthServiceHTTPServer) func(ctx http.Context) error {
@@ -102,7 +106,31 @@ func _AuthService_Logout0_HTTP_Handler(srv AuthServiceHTTPServer) func(ctx http.
 	}
 }
 
+func _AuthService_ChangePassword0_HTTP_Handler(srv AuthServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ChangePasswordRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAuthServiceChangePassword)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ChangePassword(ctx, req.(*ChangePasswordRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ChangePasswordResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
 type AuthServiceHTTPClient interface {
+	// ChangePassword 修改密码：校验旧密码后更新为新密码
+	ChangePassword(ctx context.Context, req *ChangePasswordRequest, opts ...http.CallOption) (rsp *ChangePasswordResponse, err error)
 	// Login 登录：账号或邮箱 + 密码，返回 token 及可选 user
 	Login(ctx context.Context, req *LoginRequest, opts ...http.CallOption) (rsp *LoginResponse, err error)
 	// Logout 退出登录：服务端使当前 token 失效（可选）
@@ -117,6 +145,20 @@ type AuthServiceHTTPClientImpl struct {
 
 func NewAuthServiceHTTPClient(client *http.Client) AuthServiceHTTPClient {
 	return &AuthServiceHTTPClientImpl{client}
+}
+
+// ChangePassword 修改密码：校验旧密码后更新为新密码
+func (c *AuthServiceHTTPClientImpl) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...http.CallOption) (*ChangePasswordResponse, error) {
+	var out ChangePasswordResponse
+	pattern := "/api/auth/change-password"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAuthServiceChangePassword))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 // Login 登录：账号或邮箱 + 密码，返回 token 及可选 user

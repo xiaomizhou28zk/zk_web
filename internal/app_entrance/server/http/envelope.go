@@ -27,6 +27,24 @@ func unifiedResponseEncoder(w nethttp.ResponseWriter, r *nethttp.Request, v any)
 
 var emptyJSONObject = json.RawMessage("{}")
 
+// WriteEnvelopeJSON 自定义 Handler 写入与统一 API 相同的 { code, msg, data }；bizCode≠0 时 data 可为 nil（输出空对象）。
+func WriteEnvelopeJSON(w nethttp.ResponseWriter, bizCode int, msg string, data any) error {
+	if bizCode != 0 {
+		if msg == "" {
+			msg = "请求失败"
+		}
+		return writeEnvelope(w, bizCode, msg, emptyJSONObject)
+	}
+	if data == nil {
+		return writeEnvelope(w, 0, "", emptyJSONObject)
+	}
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return writeEnvelope(w, 0, "", payload)
+}
+
 func writeEnvelope(w nethttp.ResponseWriter, code int, msg string, data json.RawMessage) error {
 	env := struct {
 		Code int             `json:"code"`

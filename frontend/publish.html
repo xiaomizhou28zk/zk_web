@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>发表文章</title>
-  <link rel="stylesheet" href="css/style.css">
   <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="site-header">
     <div class="container site-header-inner">
       <div class="header-left">
-        <a href="index.html" class="logo">📚 技术博客</a>
+        <a href="index.html" class="logo">📚 阿瑞之家</a>
         <a href="index.html" class="nav-home">首页</a>
       </div>
       <div class="header-right">
@@ -36,8 +36,14 @@
           <div class="publish-row publish-row-cover">
             <label class="publish-cover-label">封面</label>
             <div class="publish-cover-cell">
-              <span id="cover-preview" class="cover-preview">📝</span>
-              <input type="text" id="publish-cover" class="publish-cover-input" placeholder="选个 emoji" maxlength="4" autocomplete="off">
+              <div id="cover-preview-box" class="cover-preview-box">
+                <img id="cover-preview-img" class="cover-preview-img" alt="封面预览" />
+                <span id="cover-preview-placeholder" class="cover-preview-placeholder" aria-hidden="true">📝</span>
+              </div>
+              <input type="file" id="cover-file" class="publish-cover-file" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp">
+              <button type="button" class="btn btn-ghost publish-cover-btn" id="cover-pick-btn">上传图片</button>
+              <button type="button" class="btn btn-ghost publish-cover-btn" id="cover-clear-btn">清除</button>
+              <input type="hidden" id="publish-cover" value="">
             </div>
           </div>
         </div>
@@ -58,8 +64,26 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">© 2025 技术博客 · 仅供演示</div>
+    <div class="container">© 2025 阿瑞之家 · 仅供演示</div>
   </footer>
+
+  <!-- 插入视频链接（自定义居中弹层，替代浏览器 prompt） -->
+  <div id="video-url-modal" class="video-url-modal" aria-hidden="true">
+    <div class="video-url-modal-backdrop" id="video-url-modal-backdrop"></div>
+    <div class="video-url-modal-box" role="dialog" aria-modal="true" aria-labelledby="video-url-modal-title">
+      <div class="video-url-modal-header">
+        <h2 id="video-url-modal-title" class="video-url-modal-title">插入视频链接</h2>
+        <button type="button" class="video-url-modal-close" id="video-url-modal-close" aria-label="关闭">&times;</button>
+      </div>
+      <p class="video-url-modal-hint">支持 YouTube、bilibili 视频页链接，或 mp4、webm、mov 等直链。</p>
+      <label class="video-url-modal-label" for="video-url-modal-input">视频地址</label>
+      <input type="text" id="video-url-modal-input" class="auth-input video-url-modal-field" placeholder="https://…" autocomplete="off" spellcheck="false" />
+      <div class="video-url-modal-actions">
+        <button type="button" class="btn btn-ghost video-url-modal-btn" id="video-url-modal-cancel">取消</button>
+        <button type="button" class="btn btn-primary video-url-modal-btn" id="video-url-modal-confirm">插入</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
   <script src="js/config.js"></script>

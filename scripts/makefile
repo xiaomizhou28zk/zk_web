@@ -73,7 +73,9 @@ api: $(API_PROTO_FILES)
 		$(API_PROTO_FILES)
 
 	@echo "Post-processing generated files..."
-	@find $(API_PROTO_DIR) -name '*.pb.go' -not -path '*/vendor/*' | xargs -n1 -IX bash -c 'sed s/,omitempty// X > X.tmp && mv X{.tmp,}' 2>/dev/null
+	@find $(API_PROTO_DIR) -name '*.pb.go' -not -path '*/vendor/*' | while read -r f; do \
+		sed 's/,omitempty//' "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; \
+	done || true
 
 	@echo "Code generation completed successfully."
 

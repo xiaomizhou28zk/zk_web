@@ -26,10 +26,29 @@ message GetCurrentUserResponse {
   User user = 1; // 已登录时返回用户信息；未登录时为空，前端展示「未登录」等
 }
 
+// UpdateProfileRequest 更新昵称、头像（需登录；头像可为 emoji 或图片 URL）
+message UpdateProfileRequest {
+  string nickname = 1; // 最多 15 个 Unicode 字符（与前端 maxlength 一致）
+  string avatar = 2;
+}
+
+// UpdateProfileResponse 更新后的用户信息
+message UpdateProfileResponse {
+  User user = 1;
+}
+
 // UserService 个人信息服务
 service UserService {
   // 获取当前登录用户信息，用于顶栏、弹窗、个人资料与评论身份展示
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
     option (google.api.http) = { get: "/api/user/me" };
+  }
+
+  // 更新当前用户资料（昵称、头像）
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {
+    option (google.api.http) = {
+      post: "/api/user/profile"
+      body: "*"
+    };
   }
 }

@@ -47,7 +47,7 @@ func WireServer() (*kratos.App, func(), error) {
 	commentRepository := comment.NewRepository(commentMysqlStorage, replyMysqlStorage)
 	commentService := comment2.NewService(commentRepository, articleRepository, repository)
 	articleService := article2.NewService(articleRepository, repository)
-	register := http.NewRegister(userService, service, rankService, commentService, articleService)
+	register := http.NewRegister(userService, service, rankService, commentService, articleService, manager)
 	server := http.NewServer(register, manager)
 	app := newServer(server)
 	return app, func() {

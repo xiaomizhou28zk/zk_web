@@ -17,4 +17,9 @@ type ArticleRepository interface {
 	Exists(ctx context.Context, id int64) (bool, error)
 	InsertViewLog(ctx context.Context, articleID int64) error
 	HotRanking(ctx context.Context, rankType int32, limit int32) ([]entity.HotRankRow, error)
+
+	GetArticleEngagement(ctx context.Context, articleID int64, viewerAccount string) (likeCount, favoriteCount int64, liked, favorited bool, err error)
+	ToggleArticleLike(ctx context.Context, articleID int64, account string) (likeCount int64, liked bool, err error)
+	ToggleArticleFavorite(ctx context.Context, articleID int64, account string) (favoriteCount int64, favorited bool, err error)
+	ListFavoritedPublished(ctx context.Context, account string, page, pageSize int32) ([]*entity.Article, int32, error)
 }

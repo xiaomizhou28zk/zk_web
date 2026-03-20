@@ -373,3 +373,240 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetCurrentUserResponseValidationError{}
+
+// Validate checks the field values on UpdateProfileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateProfileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateProfileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateProfileRequestMultiError, or nil if none found.
+func (m *UpdateProfileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateProfileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Nickname
+
+	// no validation rules for Avatar
+
+	if len(errors) > 0 {
+		return UpdateProfileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateProfileRequestMultiError is an error wrapping multiple validation
+// errors returned by UpdateProfileRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateProfileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateProfileRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateProfileRequestMultiError) AllErrors() []error { return m }
+
+// UpdateProfileRequestValidationError is the validation error returned by
+// UpdateProfileRequest.Validate if the designated constraints aren't met.
+type UpdateProfileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateProfileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateProfileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateProfileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateProfileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateProfileRequestValidationError) ErrorName() string {
+	return "UpdateProfileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateProfileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateProfileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateProfileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateProfileRequestValidationError{}
+
+// Validate checks the field values on UpdateProfileResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateProfileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateProfileResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateProfileResponseMultiError, or nil if none found.
+func (m *UpdateProfileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateProfileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetUser()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdateProfileResponseValidationError{
+					field:  "User",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdateProfileResponseValidationError{
+					field:  "User",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUser()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateProfileResponseValidationError{
+				field:  "User",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UpdateProfileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateProfileResponseMultiError is an error wrapping multiple validation
+// errors returned by UpdateProfileResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateProfileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateProfileResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateProfileResponseMultiError) AllErrors() []error { return m }
+
+// UpdateProfileResponseValidationError is the validation error returned by
+// UpdateProfileResponse.Validate if the designated constraints aren't met.
+type UpdateProfileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateProfileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateProfileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateProfileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateProfileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateProfileResponseValidationError) ErrorName() string {
+	return "UpdateProfileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateProfileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateProfileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateProfileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateProfileResponseValidationError{}

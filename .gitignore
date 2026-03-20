@@ -1,3 +1,5 @@
+.gocache/
+.bin/
 *.log
 /log/
 .vscode/

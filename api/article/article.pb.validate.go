@@ -201,6 +201,10 @@ func (m *Article) validate(all bool) error {
 
 	// no validation rules for Visibility
 
+	// no validation rules for LikeCount
+
+	// no validation rules for FavoriteCount
+
 	if len(errors) > 0 {
 		return ArticleMultiError(errors)
 	}
@@ -868,6 +872,116 @@ var _ interface {
 	ErrorName() string
 } = GetArticleRequestValidationError{}
 
+// Validate checks the field values on ArticleEngagement with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ArticleEngagement) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ArticleEngagement with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ArticleEngagementMultiError, or nil if none found.
+func (m *ArticleEngagement) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ArticleEngagement) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for LikeCount
+
+	// no validation rules for FavoriteCount
+
+	// no validation rules for Liked
+
+	// no validation rules for Favorited
+
+	if len(errors) > 0 {
+		return ArticleEngagementMultiError(errors)
+	}
+
+	return nil
+}
+
+// ArticleEngagementMultiError is an error wrapping multiple validation errors
+// returned by ArticleEngagement.ValidateAll() if the designated constraints
+// aren't met.
+type ArticleEngagementMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ArticleEngagementMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ArticleEngagementMultiError) AllErrors() []error { return m }
+
+// ArticleEngagementValidationError is the validation error returned by
+// ArticleEngagement.Validate if the designated constraints aren't met.
+type ArticleEngagementValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ArticleEngagementValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ArticleEngagementValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ArticleEngagementValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ArticleEngagementValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ArticleEngagementValidationError) ErrorName() string {
+	return "ArticleEngagementValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ArticleEngagementValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sArticleEngagement.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ArticleEngagementValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ArticleEngagementValidationError{}
+
 // Validate checks the field values on GetArticleResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -920,6 +1034,35 @@ func (m *GetArticleResponse) validate(all bool) error {
 	}
 
 	// no validation rules for BodyHtml
+
+	if all {
+		switch v := interface{}(m.GetEngagement()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetArticleResponseValidationError{
+					field:  "Engagement",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetArticleResponseValidationError{
+					field:  "Engagement",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetEngagement()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetArticleResponseValidationError{
+				field:  "Engagement",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return GetArticleResponseMultiError(errors)
@@ -1898,3 +2041,671 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RecordViewResponseValidationError{}
+
+// Validate checks the field values on ToggleArticleLikeRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleArticleLikeRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleArticleLikeRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleArticleLikeRequestMultiError, or nil if none found.
+func (m *ToggleArticleLikeRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleArticleLikeRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ArticleId
+
+	if len(errors) > 0 {
+		return ToggleArticleLikeRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleArticleLikeRequestMultiError is an error wrapping multiple validation
+// errors returned by ToggleArticleLikeRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ToggleArticleLikeRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleArticleLikeRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleArticleLikeRequestMultiError) AllErrors() []error { return m }
+
+// ToggleArticleLikeRequestValidationError is the validation error returned by
+// ToggleArticleLikeRequest.Validate if the designated constraints aren't met.
+type ToggleArticleLikeRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleArticleLikeRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleArticleLikeRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleArticleLikeRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleArticleLikeRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleArticleLikeRequestValidationError) ErrorName() string {
+	return "ToggleArticleLikeRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleArticleLikeRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleArticleLikeRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleArticleLikeRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleArticleLikeRequestValidationError{}
+
+// Validate checks the field values on ToggleArticleLikeResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleArticleLikeResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleArticleLikeResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleArticleLikeResponseMultiError, or nil if none found.
+func (m *ToggleArticleLikeResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleArticleLikeResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for LikeCount
+
+	// no validation rules for Liked
+
+	if len(errors) > 0 {
+		return ToggleArticleLikeResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleArticleLikeResponseMultiError is an error wrapping multiple validation
+// errors returned by ToggleArticleLikeResponse.ValidateAll() if the
+// designated constraints aren't met.
+type ToggleArticleLikeResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleArticleLikeResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleArticleLikeResponseMultiError) AllErrors() []error { return m }
+
+// ToggleArticleLikeResponseValidationError is the validation error returned by
+// ToggleArticleLikeResponse.Validate if the designated constraints aren't met.
+type ToggleArticleLikeResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleArticleLikeResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleArticleLikeResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleArticleLikeResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleArticleLikeResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleArticleLikeResponseValidationError) ErrorName() string {
+	return "ToggleArticleLikeResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleArticleLikeResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleArticleLikeResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleArticleLikeResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleArticleLikeResponseValidationError{}
+
+// Validate checks the field values on ToggleArticleFavoriteRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleArticleFavoriteRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleArticleFavoriteRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleArticleFavoriteRequestMultiError, or nil if none found.
+func (m *ToggleArticleFavoriteRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleArticleFavoriteRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ArticleId
+
+	if len(errors) > 0 {
+		return ToggleArticleFavoriteRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleArticleFavoriteRequestMultiError is an error wrapping multiple
+// validation errors returned by ToggleArticleFavoriteRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ToggleArticleFavoriteRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleArticleFavoriteRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleArticleFavoriteRequestMultiError) AllErrors() []error { return m }
+
+// ToggleArticleFavoriteRequestValidationError is the validation error returned
+// by ToggleArticleFavoriteRequest.Validate if the designated constraints
+// aren't met.
+type ToggleArticleFavoriteRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleArticleFavoriteRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleArticleFavoriteRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleArticleFavoriteRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleArticleFavoriteRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleArticleFavoriteRequestValidationError) ErrorName() string {
+	return "ToggleArticleFavoriteRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleArticleFavoriteRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleArticleFavoriteRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleArticleFavoriteRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleArticleFavoriteRequestValidationError{}
+
+// Validate checks the field values on ToggleArticleFavoriteResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleArticleFavoriteResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleArticleFavoriteResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ToggleArticleFavoriteResponseMultiError, or nil if none found.
+func (m *ToggleArticleFavoriteResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleArticleFavoriteResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for FavoriteCount
+
+	// no validation rules for Favorited
+
+	if len(errors) > 0 {
+		return ToggleArticleFavoriteResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleArticleFavoriteResponseMultiError is an error wrapping multiple
+// validation errors returned by ToggleArticleFavoriteResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ToggleArticleFavoriteResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleArticleFavoriteResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleArticleFavoriteResponseMultiError) AllErrors() []error { return m }
+
+// ToggleArticleFavoriteResponseValidationError is the validation error
+// returned by ToggleArticleFavoriteResponse.Validate if the designated
+// constraints aren't met.
+type ToggleArticleFavoriteResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleArticleFavoriteResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleArticleFavoriteResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleArticleFavoriteResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleArticleFavoriteResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleArticleFavoriteResponseValidationError) ErrorName() string {
+	return "ToggleArticleFavoriteResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleArticleFavoriteResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleArticleFavoriteResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleArticleFavoriteResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleArticleFavoriteResponseValidationError{}
+
+// Validate checks the field values on ListMyFavoriteArticlesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListMyFavoriteArticlesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListMyFavoriteArticlesRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListMyFavoriteArticlesRequestMultiError, or nil if none found.
+func (m *ListMyFavoriteArticlesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListMyFavoriteArticlesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Page
+
+	// no validation rules for PageSize
+
+	if len(errors) > 0 {
+		return ListMyFavoriteArticlesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListMyFavoriteArticlesRequestMultiError is an error wrapping multiple
+// validation errors returned by ListMyFavoriteArticlesRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ListMyFavoriteArticlesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListMyFavoriteArticlesRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListMyFavoriteArticlesRequestMultiError) AllErrors() []error { return m }
+
+// ListMyFavoriteArticlesRequestValidationError is the validation error
+// returned by ListMyFavoriteArticlesRequest.Validate if the designated
+// constraints aren't met.
+type ListMyFavoriteArticlesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListMyFavoriteArticlesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListMyFavoriteArticlesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListMyFavoriteArticlesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListMyFavoriteArticlesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListMyFavoriteArticlesRequestValidationError) ErrorName() string {
+	return "ListMyFavoriteArticlesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListMyFavoriteArticlesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListMyFavoriteArticlesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListMyFavoriteArticlesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListMyFavoriteArticlesRequestValidationError{}
+
+// Validate checks the field values on ListMyFavoriteArticlesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListMyFavoriteArticlesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListMyFavoriteArticlesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListMyFavoriteArticlesResponseMultiError, or nil if none found.
+func (m *ListMyFavoriteArticlesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListMyFavoriteArticlesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetArticles() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListMyFavoriteArticlesResponseValidationError{
+						field:  fmt.Sprintf("Articles[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListMyFavoriteArticlesResponseValidationError{
+						field:  fmt.Sprintf("Articles[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListMyFavoriteArticlesResponseValidationError{
+					field:  fmt.Sprintf("Articles[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Total
+
+	if len(errors) > 0 {
+		return ListMyFavoriteArticlesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListMyFavoriteArticlesResponseMultiError is an error wrapping multiple
+// validation errors returned by ListMyFavoriteArticlesResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ListMyFavoriteArticlesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListMyFavoriteArticlesResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListMyFavoriteArticlesResponseMultiError) AllErrors() []error { return m }
+
+// ListMyFavoriteArticlesResponseValidationError is the validation error
+// returned by ListMyFavoriteArticlesResponse.Validate if the designated
+// constraints aren't met.
+type ListMyFavoriteArticlesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListMyFavoriteArticlesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListMyFavoriteArticlesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListMyFavoriteArticlesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListMyFavoriteArticlesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListMyFavoriteArticlesResponseValidationError) ErrorName() string {
+	return "ListMyFavoriteArticlesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListMyFavoriteArticlesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListMyFavoriteArticlesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListMyFavoriteArticlesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListMyFavoriteArticlesResponseValidationError{}

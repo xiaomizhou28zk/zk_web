@@ -26,7 +26,8 @@
     var bio = u && u.bio ? escapeHtml(u.bio) : '';
     var actions =
       '<a href="profile.html" class="popover-link">个人资料</a>' +
-      '<a href="my-articles.html" class="popover-link">我的文章</a>';
+      '<a href="my-articles.html" class="popover-link">我的文章</a>' +
+      '<a href="my-favorites.html" class="popover-link">我的收藏</a>';
     if (u) {
       actions += '<button type="button" class="popover-btn popover-btn-logout">退出</button>';
     } else {
@@ -217,6 +218,15 @@
         }
       });
     }
+    var myFavLink = el.querySelector('a[href="my-favorites.html"]');
+    if (myFavLink) {
+      myFavLink.addEventListener('click', function (e) {
+        if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+          e.preventDefault();
+          location.href = 'index.html?needLogin=1';
+        }
+      });
+    }
   }
 
   function bindAuthModal() {
@@ -341,6 +351,10 @@
   window.addEventListener('blog:openLogin', function () {
     ensureAuthModal();
     openAuthModal('login');
+  });
+
+  window.addEventListener('blog:refreshHeader', function () {
+    refreshHeader();
   });
 
   el.textContent = '加载中…';

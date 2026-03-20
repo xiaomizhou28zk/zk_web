@@ -10,7 +10,7 @@
   <header class="site-header">
     <div class="container site-header-inner">
       <div class="header-left">
-        <a href="index.html" class="logo">📚 技术博客</a>
+        <a href="index.html" class="logo">📚 阿瑞之家</a>
         <a href="index.html" class="nav-home">首页</a>
       </div>
       <div class="header-right">
@@ -20,20 +20,95 @@
   </header>
 
   <main class="container main-content profile-page">
-    <h1 class="page-title">个人信息</h1>
+    <h1 class="profile-page-title">个人信息</h1>
+
     <div id="profile-loading" class="profile-loading">加载中…</div>
-    <div id="profile-card" class="profile-card" style="display:none">
-      <span id="card-avatar" class="card-avatar">👤</span>
-      <div class="card-info">
-        <strong id="card-nickname" class="card-nickname"></strong>
-        <p id="card-bio" class="card-bio"></p>
+
+    <div id="profile-content" class="profile-content" style="display:none">
+      <div class="profile-group" aria-label="资料与账号">
+        <div class="profile-card profile-card-display" id="profile-card">
+          <span id="card-avatar" class="card-avatar">👤</span>
+          <div class="card-info">
+            <strong id="card-nickname" class="card-nickname"></strong>
+            <p id="card-bio" class="card-bio"></p>
+          </div>
+        </div>
+        <div class="profile-group-separator" role="presentation" aria-hidden="true"></div>
+        <div class="profile-group-footer">
+          <div class="profile-quick-actions">
+            <button type="button" class="profile-action-chip" id="profile-open-edit-btn">编辑资料</button>
+            <button type="button" class="profile-action-chip" id="profile-open-password-btn">修改密码</button>
+          </div>
+        </div>
       </div>
     </div>
   </main>
 
   <footer class="site-footer">
-    <div class="container">© 2025 技术博客 · 仅供演示</div>
+    <div class="container">© 2025 阿瑞之家 · 仅供演示</div>
   </footer>
+
+  <div id="profile-edit-modal" class="video-url-modal profile-edit-modal" aria-hidden="true">
+    <div class="video-url-modal-backdrop" id="profile-edit-backdrop"></div>
+    <div class="video-url-modal-box profile-edit-modal-box" role="dialog" aria-modal="true" aria-labelledby="profile-edit-title">
+      <div class="video-url-modal-header">
+        <h2 id="profile-edit-title" class="video-url-modal-title">编辑资料</h2>
+        <button type="button" class="video-url-modal-close" id="profile-edit-close" aria-label="关闭">&times;</button>
+      </div>
+      <p class="video-url-modal-hint profile-edit-modal-hint">支持 emoji 头像，或上传 / 粘贴图片链接（与文章封面相同规格）</p>
+      <form id="profile-form" class="profile-form profile-form-modal">
+        <div class="profile-field">
+          <label for="profile-nickname">昵称 <span class="required">*</span></label>
+          <input type="text" id="profile-nickname" class="profile-input" maxlength="15" required autocomplete="nickname" placeholder="展示名称（最多 15 字）">
+        </div>
+        <div class="profile-field">
+          <label>头像</label>
+          <div class="avatar-preview-wrap">
+            <span id="profile-avatar-preview" class="avatar-preview" aria-hidden="true">👤</span>
+            <div class="profile-avatar-actions">
+              <div class="profile-avatar-upload-row">
+                <input type="file" id="profile-avatar-file" class="publish-cover-file" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp">
+                <button type="button" class="btn btn-small" id="profile-avatar-upload-btn">上传图片</button>
+                <span class="profile-avatar-upload-hint">JPEG / PNG / GIF / WebP</span>
+              </div>
+              <input type="text" id="profile-avatar-text" class="profile-input profile-avatar" placeholder="图片链接，或直接输入 emoji" autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div class="profile-actions profile-actions-modal">
+          <span id="profile-form-msg" class="profile-msg profile-msg-modal" aria-live="polite"></span>
+          <div class="profile-modal-footer-btns">
+            <button type="button" class="btn btn-ghost btn-compact" id="profile-edit-cancel">取消</button>
+            <button type="submit" class="btn btn-primary btn-compact" id="profile-save-btn">保存</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="profile-password-modal" class="video-url-modal profile-password-modal" aria-hidden="true">
+    <div class="video-url-modal-backdrop" id="profile-password-backdrop"></div>
+    <div class="video-url-modal-box" role="dialog" aria-modal="true" aria-labelledby="profile-password-title">
+      <div class="video-url-modal-header">
+        <h2 id="profile-password-title" class="video-url-modal-title">修改密码</h2>
+        <button type="button" class="video-url-modal-close" id="profile-password-close" aria-label="关闭">&times;</button>
+      </div>
+      <p class="video-url-modal-hint">6–50 位，支持字母、数字与常见符号（与注册规则一致）</p>
+      <form id="profile-password-form" class="profile-password-form">
+        <label class="video-url-modal-label" for="profile-old-password">当前密码</label>
+        <input type="password" id="profile-old-password" class="auth-input video-url-modal-field" autocomplete="current-password" required>
+        <label class="video-url-modal-label" for="profile-new-password">新密码</label>
+        <input type="password" id="profile-new-password" class="auth-input video-url-modal-field" autocomplete="new-password" required>
+        <label class="video-url-modal-label" for="profile-new-password2">确认新密码</label>
+        <input type="password" id="profile-new-password2" class="auth-input video-url-modal-field" autocomplete="new-password" required>
+        <p id="profile-password-msg" class="auth-msg" aria-live="polite"></p>
+        <div class="video-url-modal-actions">
+          <button type="button" class="btn btn-ghost video-url-modal-btn" id="profile-password-cancel">取消</button>
+          <button type="submit" class="btn btn-primary video-url-modal-btn" id="profile-password-submit">确认修改</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="js/config.js"></script>
   <script src="js/toast.js"></script>

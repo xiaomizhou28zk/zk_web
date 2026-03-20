@@ -17,6 +17,8 @@ type Article struct {
 	UpdateAt     time.Time
 	AuthorName   string
 	AuthorAvatar string
+	LikeCount     int64
+	FavoriteCount int64
 }
 
 // HotRankRow 热度榜一行

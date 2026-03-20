@@ -43,14 +43,16 @@ func toProtoArticle(a *entity.Article) *pb.Article {
 		vis = 1
 	}
 	return &pb.Article{
-		Id:          a.Id,
-		Title:       a.Title,
-		Summary:     a.Summary,
-		Author:      &pb.Author{Name: a.AuthorName, Avatar: avatar},
-		PublishedAt: pubAt,
-		Cover:       a.Cover,
-		Status:      pb.ArticleStatus(a.Status),
-		Visibility:  vis,
+		Id:             a.Id,
+		Title:          a.Title,
+		Summary:        a.Summary,
+		Author:         &pb.Author{Name: a.AuthorName, Avatar: avatar},
+		PublishedAt:    pubAt,
+		Cover:          a.Cover,
+		Status:         pb.ArticleStatus(a.Status),
+		Visibility:     vis,
+		LikeCount:      a.LikeCount,
+		FavoriteCount:  a.FavoriteCount,
 	}
 }
 
@@ -107,9 +109,24 @@ func (s *Service) GetArticle(ctx context.Context, request *pb.GetArticleRequest)
 	if err := s.repo.InsertViewLog(ctx, request.GetId()); err != nil {
 		log.Error("InsertViewLog failed: article_id=%d err=%v", request.GetId(), err)
 	}
+	viewer := ""
+	if info, ok := domainAuth.ReadUserContextInfo(ctx); ok && info != nil {
+		viewer = info.Account
+	}
+	likeCount, favCount, liked, favorited, err := s.repo.GetArticleEngagement(ctx, request.GetId(), viewer)
+	if err != nil {
+		log.Error("GetArticleEngagement failed: article_id=%d err=%v", request.GetId(), err)
+		likeCount, favCount, liked, favorited = 0, 0, false, false
+	}
 	return &pb.GetArticleResponse{
 		Article:  toProtoArticle(a),
 		BodyHtml: a.BodyHTML,
+		Engagement: &pb.ArticleEngagement{
+			LikeCount:     likeCount,
+			FavoriteCount: favCount,
+			Liked:         liked,
+			Favorited:     favorited,
+		},
 	}, nil
 }
 
@@ -182,6 +199,60 @@ func (s *Service) CreateArticle(ctx context.Context, request *pb.CreateArticleRe
 func (s *Service) RecordView(ctx context.Context, request *pb.RecordViewRequest) (*pb.RecordViewResponse, error) {
 	_ = s.repo.InsertViewLog(ctx, request.GetArticleId())
 	return &pb.RecordViewResponse{}, nil
+}
+
+func (s *Service) ToggleArticleLike(ctx context.Context, request *pb.ToggleArticleLikeRequest) (*pb.ToggleArticleLikeResponse, error) {
+	info, ok := domainAuth.ReadUserContextInfo(ctx)
+	if !ok || info == nil || info.Account == "" {
+		return nil, kerrors.Unauthorized("UNAUTHORIZED", "请先登录")
+	}
+	a, err := s.repo.GetByID(ctx, request.GetArticleId())
+	if err != nil {
+		return nil, err
+	}
+	if a == nil {
+		return nil, kerrors.NotFound("ARTICLE_NOT_FOUND", "文章不存在")
+	}
+	n, liked, err := s.repo.ToggleArticleLike(ctx, request.GetArticleId(), info.Account)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ToggleArticleLikeResponse{LikeCount: n, Liked: liked}, nil
+}
+
+func (s *Service) ToggleArticleFavorite(ctx context.Context, request *pb.ToggleArticleFavoriteRequest) (*pb.ToggleArticleFavoriteResponse, error) {
+	info, ok := domainAuth.ReadUserContextInfo(ctx)
+	if !ok || info == nil || info.Account == "" {
+		return nil, kerrors.Unauthorized("UNAUTHORIZED", "请先登录")
+	}
+	a, err := s.repo.GetByID(ctx, request.GetArticleId())
+	if err != nil {
+		return nil, err
+	}
+	if a == nil {
+		return nil, kerrors.NotFound("ARTICLE_NOT_FOUND", "文章不存在")
+	}
+	n, favorited, err := s.repo.ToggleArticleFavorite(ctx, request.GetArticleId(), info.Account)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ToggleArticleFavoriteResponse{FavoriteCount: n, Favorited: favorited}, nil
+}
+
+func (s *Service) ListMyFavoriteArticles(ctx context.Context, request *pb.ListMyFavoriteArticlesRequest) (*pb.ListMyFavoriteArticlesResponse, error) {
+	info, ok := domainAuth.ReadUserContextInfo(ctx)
+	if !ok || info == nil || info.Account == "" {
+		return nil, kerrors.Unauthorized("UNAUTHORIZED", "请先登录")
+	}
+	list, total, err := s.repo.ListFavoritedPublished(ctx, info.Account, request.GetPage(), request.GetPageSize())
+	if err != nil {
+		return nil, err
+	}
+	rsp := &pb.ListMyFavoriteArticlesResponse{Total: total}
+	for _, a := range list {
+		rsp.Articles = append(rsp.Articles, toProtoArticle(a))
+	}
+	return rsp, nil
 }
 
 func (s *Service) UpdateArticle(ctx context.Context, request *pb.UpdateArticleRequest) (*pb.UpdateArticleResponse, error) {

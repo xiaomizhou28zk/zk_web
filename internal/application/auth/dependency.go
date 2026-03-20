@@ -9,4 +9,5 @@ import (
 type UserRepository interface {
 	GetUserInfo(ctx context.Context, account string) (*entity.User, error)
 	InsertUser(ctx context.Context, user *entity.User) error
+	UpdateUserPasswordHash(ctx context.Context, account, passwordHash string) error
 }

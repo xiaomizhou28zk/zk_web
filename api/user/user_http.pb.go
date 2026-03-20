@@ -20,15 +20,19 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationUserServiceGetCurrentUser = "/blog.v1.UserService/GetCurrentUser"
+const OperationUserServiceUpdateProfile = "/blog.v1.UserService/UpdateProfile"
 
 type UserServiceHTTPServer interface {
 	// GetCurrentUser 获取当前登录用户信息，用于顶栏、弹窗、个人资料与评论身份展示
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	// UpdateProfile 更新当前用户资料（昵称、头像）
+	UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error)
 }
 
 func RegisterUserServiceHTTPServer(s *http.Server, srv UserServiceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/user/me", _UserService_GetCurrentUser0_HTTP_Handler(srv))
+	r.POST("/api/user/profile", _UserService_UpdateProfile0_HTTP_Handler(srv))
 }
 
 func _UserService_GetCurrentUser0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
@@ -50,9 +54,33 @@ func _UserService_GetCurrentUser0_HTTP_Handler(srv UserServiceHTTPServer) func(c
 	}
 }
 
+func _UserService_UpdateProfile0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateProfileRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceUpdateProfile)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateProfile(ctx, req.(*UpdateProfileRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateProfileResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
 type UserServiceHTTPClient interface {
 	// GetCurrentUser 获取当前登录用户信息，用于顶栏、弹窗、个人资料与评论身份展示
 	GetCurrentUser(ctx context.Context, req *GetCurrentUserRequest, opts ...http.CallOption) (rsp *GetCurrentUserResponse, err error)
+	// UpdateProfile 更新当前用户资料（昵称、头像）
+	UpdateProfile(ctx context.Context, req *UpdateProfileRequest, opts ...http.CallOption) (rsp *UpdateProfileResponse, err error)
 }
 
 type UserServiceHTTPClientImpl struct {
@@ -71,6 +99,20 @@ func (c *UserServiceHTTPClientImpl) GetCurrentUser(ctx context.Context, in *GetC
 	opts = append(opts, http.Operation(OperationUserServiceGetCurrentUser))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// UpdateProfile 更新当前用户资料（昵称、头像）
+func (c *UserServiceHTTPClientImpl) UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...http.CallOption) (*UpdateProfileResponse, error) {
+	var out UpdateProfileResponse
+	pattern := "/api/user/profile"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceUpdateProfile))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

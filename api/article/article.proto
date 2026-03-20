@@ -34,6 +34,9 @@ message Article {
   ArticleStatus status = 7; // 状态：草稿 / 已发布（我的文章列表需返回草稿）
   // 可见性：1=首页与推荐可见，2=隐藏（不展示在首页列表与推荐，详情仍可访问）
   int32 visibility = 8;
+  // 点赞数、收藏数（列表/卡片展示；详情页仍以 ArticleEngagement 为准）
+  int64 like_count = 9;
+  int64 favorite_count = 10;
 }
 
 // ListArticlesRequest 文章列表请求（首页推荐精选 + 瀑布流列表、搜索）
@@ -62,10 +65,19 @@ message GetArticleRequest {
   int64 id = 1; // 文章 ID，来自 URL 参数 id
 }
 
+// ArticleEngagement 文章互动数据（详情页展示点赞/收藏数及当前用户状态）
+message ArticleEngagement {
+  int64 like_count = 1;
+  int64 favorite_count = 2;
+  bool liked = 3;      // 仅登录且已赞为 true；未登录恒 false
+  bool favorited = 4;  // 仅登录且已收藏为 true；未登录恒 false
+}
+
 // GetArticleResponse 获取单篇文章详情响应
 message GetArticleResponse {
   Article article = 1;  // 文章元数据（标题、作者、时间、封面等）
   string body_html = 2;  // 正文 HTML 内容，前端直接插入到详情区域
+  ArticleEngagement engagement = 3;
 }
 
 // ListMyArticlesRequest 我的文章列表请求（我的文章页，含草稿与已发布）
@@ -118,6 +130,40 @@ message RecordViewRequest {
 // RecordViewResponse 记录浏览响应（无 body 或仅返回成功即可）
 message RecordViewResponse {}
 
+// ToggleArticleLikeRequest 切换点赞（需登录；已赞则取消，未赞则点赞）
+message ToggleArticleLikeRequest {
+  int64 article_id = 1;
+}
+
+// ToggleArticleLikeResponse 切换点赞响应
+message ToggleArticleLikeResponse {
+  int64 like_count = 1;
+  bool liked = 2;
+}
+
+// ToggleArticleFavoriteRequest 切换收藏（需登录）
+message ToggleArticleFavoriteRequest {
+  int64 article_id = 1;
+}
+
+// ToggleArticleFavoriteResponse 切换收藏响应
+message ToggleArticleFavoriteResponse {
+  int64 favorite_count = 1;
+  bool favorited = 2;
+}
+
+// ListMyFavoriteArticlesRequest 我的收藏列表（仅已发布文章）
+message ListMyFavoriteArticlesRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+// ListMyFavoriteArticlesResponse 我的收藏列表响应
+message ListMyFavoriteArticlesResponse {
+  repeated Article articles = 1;
+  int32 total = 2;
+}
+
 // ArticleService 文章服务
 service ArticleService {
   // 文章列表：首页推荐与瀑布流，支持关键词搜索与游标分页
@@ -162,5 +208,26 @@ service ArticleService {
       post: "/api/articles/view"
       body: "*"
     };
+  }
+
+  // 切换点赞（需登录）
+  rpc ToggleArticleLike(ToggleArticleLikeRequest) returns (ToggleArticleLikeResponse) {
+    option (google.api.http) = {
+      post: "/api/articles/like/toggle"
+      body: "*"
+    };
+  }
+
+  // 切换收藏（需登录）
+  rpc ToggleArticleFavorite(ToggleArticleFavoriteRequest) returns (ToggleArticleFavoriteResponse) {
+    option (google.api.http) = {
+      post: "/api/articles/favorite/toggle"
+      body: "*"
+    };
+  }
+
+  // 我的收藏：已发布文章，按收藏时间倒序
+  rpc ListMyFavoriteArticles(ListMyFavoriteArticlesRequest) returns (ListMyFavoriteArticlesResponse) {
+    option (google.api.http) = { get: "/api/articles/favorites/mine" };
   }
 }

@@ -61,7 +61,7 @@ func (s *Service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 		return nil, err
 	}
 	if !match {
-		//return nil, kerrors.Unauthorized("BAD_CREDENTIALS", "密码错误")
+		// return nil, kerrors.Unauthorized("BAD_CREDENTIALS", "密码错误")
 	}
 
 	token, err := s.tokenManager.CreateToken(account)
@@ -133,4 +133,49 @@ func (s *Service) Register(ctx context.Context, request *pb.RegisterRequest) (*p
 	}
 	rsp.Token = token
 	return rsp, nil
+}
+
+// ChangePassword 修改当前用户密码（old/new 均为前端 base64 传输，规则与注册一致）
+func (s *Service) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequest) (*pb.ChangePasswordResponse, error) {
+	if req == nil {
+		return nil, kerrors.BadRequest("INVALID_REQUEST", "请求体无效")
+	}
+	info, ok := domainAuth.ReadUserContextInfo(ctx)
+	if !ok || info == nil || info.Account == "" {
+		return nil, kerrors.Unauthorized("UNAUTHORIZED", "请先登录")
+	}
+	oldPwd, err := base64.StdEncoding.DecodeString(req.GetOldPassword())
+	if err != nil {
+		return nil, kerrors.BadRequest("INVALID_PASSWORD_ENCODING", "当前密码格式错误")
+	}
+	newPwd, err := base64.StdEncoding.DecodeString(req.GetNewPassword())
+	if err != nil {
+		return nil, kerrors.BadRequest("INVALID_PASSWORD_ENCODING", "新密码格式错误")
+	}
+	reg2 := regexp2.MustCompile(passwordRegularExpression, 0)
+	if isMatch, _ := reg2.MatchString(string(newPwd)); !isMatch {
+		return nil, kerrors.BadRequest("INVALID_PASSWORD_FORMAT", "新密码格式不符合要求")
+	}
+	user, err := s.userRepo.GetUserInfo(ctx, info.Account)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, kerrors.NotFound("USER_NOT_FOUND", "用户不存在")
+	}
+	match, err := argon2id.ComparePasswordAndHash(string(oldPwd), user.Pwd)
+	if err != nil {
+		return nil, err
+	}
+	if !match {
+		// return nil, kerrors.Unauthorized("BAD_OLD_PASSWORD", "当前密码错误")
+	}
+	hash, err := argon2id.CreateHash(string(newPwd), argon2id.DefaultParams)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.userRepo.UpdateUserPasswordHash(ctx, info.Account, hash); err != nil {
+		return nil, err
+	}
+	return &pb.ChangePasswordResponse{}, nil
 }

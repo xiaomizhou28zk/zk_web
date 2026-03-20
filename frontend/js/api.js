@@ -102,6 +102,22 @@
       return request('GET', '/api/user/me');
     },
 
+    /** 更新昵称、头像（需登录；头像可为 emoji 或图片 URL） */
+    updateProfile: function (nickname, avatar) {
+      return request('POST', '/api/user/profile', {
+        nickname: nickname,
+        avatar: avatar || '👤',
+      });
+    },
+
+    /** 修改密码（需登录；明文由内部 base64 后与登录一致） */
+    changePassword: function (oldPassword, newPassword) {
+      return request('POST', '/api/auth/change-password', {
+        old_password: base64EncodePassword(oldPassword),
+        new_password: base64EncodePassword(newPassword),
+      });
+    },
+
     login: function (account, password) {
       return request('POST', '/api/auth/login', { account: account, password: base64EncodePassword(password) })
         .then(function (data) {
@@ -142,6 +158,21 @@
 
     getMyArticles: function (params) {
       return request('GET', '/api/articles/mine', null, {
+        page: params && params.page,
+        page_size: params && params.page_size,
+      });
+    },
+
+    toggleArticleLike: function (articleId) {
+      return request('POST', '/api/articles/like/toggle', { article_id: articleId });
+    },
+
+    toggleArticleFavorite: function (articleId) {
+      return request('POST', '/api/articles/favorite/toggle', { article_id: articleId });
+    },
+
+    getMyFavoriteArticles: function (params) {
+      return request('GET', '/api/articles/favorites/mine', null, {
         page: params && params.page,
         page_size: params && params.page_size,
       });
@@ -191,6 +222,58 @@
       var map = { total: 1, week: 2, day: 3 };
       var t = map[String(type || 'total').toLowerCase()] || 1;
       return request('GET', '/api/articles/ranking', null, { type: t, limit: 10 });
+    },
+
+    /** 正文/编辑器视频：multipart，字段名 file；返回 data.url（mp4/webm/mov，最大约 80MB） */
+    uploadEditorVideo: function (file) {
+      var url = BASE + '/api/upload/editor-video';
+      var fd = new FormData();
+      fd.append('file', file);
+      var token = getToken();
+      var headers = {};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      return fetch(url, { method: 'POST', headers: headers, body: fd }).then(function (response) {
+        return response.text().then(function (text) {
+          var res;
+          try {
+            res = text ? JSON.parse(text) : {};
+          } catch (_) {
+            throw new Error('响应解析失败');
+          }
+          if (typeof res.code !== 'number' || res.code !== 0) {
+            var errMsg = res.msg != null && res.msg !== '' ? String(res.msg) : '上传失败';
+            throw new Error(errMsg);
+          }
+          var data = res.data != null ? res.data : {};
+          return toCamel(data);
+        });
+      });
+    },
+
+    /** 封面上传：multipart，字段名 file；返回 data.url */
+    uploadArticleCover: function (file) {
+      var url = BASE + '/api/upload/cover';
+      var fd = new FormData();
+      fd.append('file', file);
+      var token = getToken();
+      var headers = {};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      return fetch(url, { method: 'POST', headers: headers, body: fd }).then(function (response) {
+        return response.text().then(function (text) {
+          var res;
+          try {
+            res = text ? JSON.parse(text) : {};
+          } catch (_) {
+            throw new Error('响应解析失败');
+          }
+          if (typeof res.code !== 'number' || res.code !== 0) {
+            var errMsg = res.msg != null && res.msg !== '' ? String(res.msg) : '上传失败';
+            throw new Error(errMsg);
+          }
+          var data = res.data != null ? res.data : {};
+          return toCamel(data);
+        });
+      });
     },
   };
 })();

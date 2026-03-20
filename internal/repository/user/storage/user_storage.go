@@ -37,6 +37,27 @@ func (u *UserMysqlStorage) GetUserInfo(ctx context.Context, account string) (*en
 	return factory.Po2DoUser(poData), nil
 }
 
+func (u *UserMysqlStorage) UpdateUserProfile(ctx context.Context, account, name, avatar string) error {
+	_, err := u.mysqlClient.Context(ctx).Table((*po.User)(nil).TableName()).
+		Where("account = ?", account).And("status = ?", 1).
+		Update(map[string]interface{}{
+			"name":      name,
+			"avatar":    avatar,
+			"update_at": time.Now(),
+		})
+	return err
+}
+
+func (u *UserMysqlStorage) UpdateUserPasswordHash(ctx context.Context, account, passwordHash string) error {
+	_, err := u.mysqlClient.Context(ctx).Table((*po.User)(nil).TableName()).
+		Where("account = ?", account).And("status = ?", 1).
+		Update(map[string]interface{}{
+			"pwd":       passwordHash,
+			"update_at": time.Now(),
+		})
+	return err
+}
+
 func (u *UserMysqlStorage) InsertUser(ctx context.Context, user *entity.User) error {
 	poData := factory.Do2PoUser(user)
 	now := time.Now()

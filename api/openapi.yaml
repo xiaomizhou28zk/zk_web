@@ -126,6 +126,49 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/blog.v1.GetArticleResponse'
+    /api/articles/favorite/toggle:
+        post:
+            tags:
+                - ArticleService
+            description: 切换收藏（需登录）
+            operationId: ArticleService_ToggleArticleFavorite
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.ToggleArticleFavoriteRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.ToggleArticleFavoriteResponse'
+    /api/articles/favorites/mine:
+        get:
+            tags:
+                - ArticleService
+            description: 我的收藏：已发布文章，按收藏时间倒序
+            operationId: ArticleService_ListMyFavoriteArticles
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: page_size
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.ListMyFavoriteArticlesResponse'
     /api/articles/featured:
         get:
             tags:
@@ -139,6 +182,25 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/blog.v1.ListFeaturedArticlesResponse'
+    /api/articles/like/toggle:
+        post:
+            tags:
+                - ArticleService
+            description: 切换点赞（需登录）
+            operationId: ArticleService_ToggleArticleLike
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.ToggleArticleLikeRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.ToggleArticleLikeResponse'
     /api/articles/mine:
         get:
             tags:
@@ -225,6 +287,25 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/blog.v1.RecordViewResponse'
+    /api/auth/change-password:
+        post:
+            tags:
+                - AuthService
+            description: 修改密码：校验旧密码后更新为新密码
+            operationId: AuthService_ChangePassword
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.ChangePasswordRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.ChangePasswordResponse'
     /api/auth/login:
         post:
             tags:
@@ -289,6 +370,25 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/blog.v1.GetCurrentUserResponse'
+    /api/user/profile:
+        post:
+            tags:
+                - UserService
+            description: 更新当前用户资料（昵称、头像）
+            operationId: UserService_UpdateProfile
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/blog.v1.UpdateProfileRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/blog.v1.UpdateProfileResponse'
 components:
     schemas:
         blog.v1.AddCommentRequest:
@@ -348,7 +448,28 @@ components:
                     type: integer
                     description: 可见性：1=首页与推荐可见，2=隐藏（不展示在首页列表与推荐，详情仍可访问）
                     format: int32
+                like_count:
+                    type: integer
+                    description: 点赞数、收藏数（列表/卡片展示；详情页仍以 ArticleEngagement 为准）
+                    format: int64
+                favorite_count:
+                    type: integer
+                    format: int64
             description: Article 文章元数据（不含正文，用于列表、卡片、我的文章列表等）
+        blog.v1.ArticleEngagement:
+            type: object
+            properties:
+                like_count:
+                    type: integer
+                    format: int64
+                favorite_count:
+                    type: integer
+                    format: int64
+                liked:
+                    type: boolean
+                favorited:
+                    type: boolean
+            description: ArticleEngagement 文章互动数据（详情页展示点赞/收藏数及当前用户状态）
         blog.v1.Author:
             type: object
             properties:
@@ -357,6 +478,18 @@ components:
                 avatar:
                     type: string
             description: Author 文章作者信息（用于列表与详情展示）
+        blog.v1.ChangePasswordRequest:
+            type: object
+            properties:
+                old_password:
+                    type: string
+                new_password:
+                    type: string
+            description: ChangePasswordRequest 修改密码（需登录；密码为 base64 编码，与登录一致）
+        blog.v1.ChangePasswordResponse:
+            type: object
+            properties: {}
+            description: ChangePasswordResponse 修改密码成功
         blog.v1.Comment:
             type: object
             properties:
@@ -402,6 +535,8 @@ components:
                     $ref: '#/components/schemas/blog.v1.Article'
                 body_html:
                     type: string
+                engagement:
+                    $ref: '#/components/schemas/blog.v1.ArticleEngagement'
             description: GetArticleResponse 获取单篇文章详情响应
         blog.v1.GetCurrentUserResponse:
             type: object
@@ -466,6 +601,17 @@ components:
                     type: integer
                     format: int32
             description: ListMyArticlesResponse 我的文章列表响应
+        blog.v1.ListMyFavoriteArticlesResponse:
+            type: object
+            properties:
+                articles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/blog.v1.Article'
+                total:
+                    type: integer
+                    format: int32
+            description: ListMyFavoriteArticlesResponse 我的收藏列表响应
         blog.v1.LoginRequest:
             type: object
             properties:
@@ -529,6 +675,38 @@ components:
                 reply_to:
                     type: string
             description: Reply 单条回复（嵌套在评论下，支持多级：回复的回复）
+        blog.v1.ToggleArticleFavoriteRequest:
+            type: object
+            properties:
+                article_id:
+                    type: integer
+                    format: int64
+            description: ToggleArticleFavoriteRequest 切换收藏（需登录）
+        blog.v1.ToggleArticleFavoriteResponse:
+            type: object
+            properties:
+                favorite_count:
+                    type: integer
+                    format: int64
+                favorited:
+                    type: boolean
+            description: ToggleArticleFavoriteResponse 切换收藏响应
+        blog.v1.ToggleArticleLikeRequest:
+            type: object
+            properties:
+                article_id:
+                    type: integer
+                    format: int64
+            description: ToggleArticleLikeRequest 切换点赞（需登录；已赞则取消，未赞则点赞）
+        blog.v1.ToggleArticleLikeResponse:
+            type: object
+            properties:
+                like_count:
+                    type: integer
+                    format: int64
+                liked:
+                    type: boolean
+            description: ToggleArticleLikeResponse 切换点赞响应
         blog.v1.UpdateArticleRequest:
             type: object
             properties:
@@ -556,6 +734,20 @@ components:
                 ok:
                     type: boolean
             description: UpdateArticleResponse 更新文章响应
+        blog.v1.UpdateProfileRequest:
+            type: object
+            properties:
+                nickname:
+                    type: string
+                avatar:
+                    type: string
+            description: UpdateProfileRequest 更新昵称、头像（需登录；头像可为 emoji 或图片 URL）
+        blog.v1.UpdateProfileResponse:
+            type: object
+            properties:
+                user:
+                    $ref: '#/components/schemas/blog.v1.User'
+            description: UpdateProfileResponse 更新后的用户信息
         blog.v1.User:
             type: object
             properties:

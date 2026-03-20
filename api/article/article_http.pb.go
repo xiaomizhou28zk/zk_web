@@ -24,7 +24,10 @@ const OperationArticleServiceGetArticle = "/blog.v1.ArticleService/GetArticle"
 const OperationArticleServiceListArticles = "/blog.v1.ArticleService/ListArticles"
 const OperationArticleServiceListFeaturedArticles = "/blog.v1.ArticleService/ListFeaturedArticles"
 const OperationArticleServiceListMyArticles = "/blog.v1.ArticleService/ListMyArticles"
+const OperationArticleServiceListMyFavoriteArticles = "/blog.v1.ArticleService/ListMyFavoriteArticles"
 const OperationArticleServiceRecordView = "/blog.v1.ArticleService/RecordView"
+const OperationArticleServiceToggleArticleFavorite = "/blog.v1.ArticleService/ToggleArticleFavorite"
+const OperationArticleServiceToggleArticleLike = "/blog.v1.ArticleService/ToggleArticleLike"
 const OperationArticleServiceUpdateArticle = "/blog.v1.ArticleService/UpdateArticle"
 
 type ArticleServiceHTTPServer interface {
@@ -38,8 +41,14 @@ type ArticleServiceHTTPServer interface {
 	ListFeaturedArticles(context.Context, *ListFeaturedArticlesRequest) (*ListFeaturedArticlesResponse, error)
 	// ListMyArticles 我的文章列表：当前用户创建的文章（含草稿），支持分页
 	ListMyArticles(context.Context, *ListMyArticlesRequest) (*ListMyArticlesResponse, error)
+	// ListMyFavoriteArticles 我的收藏：已发布文章，按收藏时间倒序
+	ListMyFavoriteArticles(context.Context, *ListMyFavoriteArticlesRequest) (*ListMyFavoriteArticlesResponse, error)
 	// RecordView 记录文章被浏览一次，用于热度榜统计（article_id 在 body 中）
 	RecordView(context.Context, *RecordViewRequest) (*RecordViewResponse, error)
+	// ToggleArticleFavorite 切换收藏（需登录）
+	ToggleArticleFavorite(context.Context, *ToggleArticleFavoriteRequest) (*ToggleArticleFavoriteResponse, error)
+	// ToggleArticleLike 切换点赞（需登录）
+	ToggleArticleLike(context.Context, *ToggleArticleLikeRequest) (*ToggleArticleLikeResponse, error)
 	// UpdateArticle 更新文章：编辑已有文章，可修改标题/简介/封面/正文/状态（草稿或发布），id 在 body 中
 	UpdateArticle(context.Context, *UpdateArticleRequest) (*UpdateArticleResponse, error)
 }
@@ -53,6 +62,9 @@ func RegisterArticleServiceHTTPServer(s *http.Server, srv ArticleServiceHTTPServ
 	r.POST("/api/articles", _ArticleService_CreateArticle0_HTTP_Handler(srv))
 	r.POST("/api/articles/update", _ArticleService_UpdateArticle0_HTTP_Handler(srv))
 	r.POST("/api/articles/view", _ArticleService_RecordView0_HTTP_Handler(srv))
+	r.POST("/api/articles/like/toggle", _ArticleService_ToggleArticleLike0_HTTP_Handler(srv))
+	r.POST("/api/articles/favorite/toggle", _ArticleService_ToggleArticleFavorite0_HTTP_Handler(srv))
+	r.GET("/api/articles/favorites/mine", _ArticleService_ListMyFavoriteArticles0_HTTP_Handler(srv))
 }
 
 func _ArticleService_ListArticles0_HTTP_Handler(srv ArticleServiceHTTPServer) func(ctx http.Context) error {
@@ -197,6 +209,69 @@ func _ArticleService_RecordView0_HTTP_Handler(srv ArticleServiceHTTPServer) func
 	}
 }
 
+func _ArticleService_ToggleArticleLike0_HTTP_Handler(srv ArticleServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ToggleArticleLikeRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationArticleServiceToggleArticleLike)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ToggleArticleLike(ctx, req.(*ToggleArticleLikeRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ToggleArticleLikeResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ArticleService_ToggleArticleFavorite0_HTTP_Handler(srv ArticleServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ToggleArticleFavoriteRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationArticleServiceToggleArticleFavorite)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ToggleArticleFavorite(ctx, req.(*ToggleArticleFavoriteRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ToggleArticleFavoriteResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ArticleService_ListMyFavoriteArticles0_HTTP_Handler(srv ArticleServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListMyFavoriteArticlesRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationArticleServiceListMyFavoriteArticles)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListMyFavoriteArticles(ctx, req.(*ListMyFavoriteArticlesRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListMyFavoriteArticlesResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
 type ArticleServiceHTTPClient interface {
 	// CreateArticle 创建文章：新写一篇，可保存为草稿或直接发布
 	CreateArticle(ctx context.Context, req *CreateArticleRequest, opts ...http.CallOption) (rsp *CreateArticleResponse, err error)
@@ -208,8 +283,14 @@ type ArticleServiceHTTPClient interface {
 	ListFeaturedArticles(ctx context.Context, req *ListFeaturedArticlesRequest, opts ...http.CallOption) (rsp *ListFeaturedArticlesResponse, err error)
 	// ListMyArticles 我的文章列表：当前用户创建的文章（含草稿），支持分页
 	ListMyArticles(ctx context.Context, req *ListMyArticlesRequest, opts ...http.CallOption) (rsp *ListMyArticlesResponse, err error)
+	// ListMyFavoriteArticles 我的收藏：已发布文章，按收藏时间倒序
+	ListMyFavoriteArticles(ctx context.Context, req *ListMyFavoriteArticlesRequest, opts ...http.CallOption) (rsp *ListMyFavoriteArticlesResponse, err error)
 	// RecordView 记录文章被浏览一次，用于热度榜统计（article_id 在 body 中）
 	RecordView(ctx context.Context, req *RecordViewRequest, opts ...http.CallOption) (rsp *RecordViewResponse, err error)
+	// ToggleArticleFavorite 切换收藏（需登录）
+	ToggleArticleFavorite(ctx context.Context, req *ToggleArticleFavoriteRequest, opts ...http.CallOption) (rsp *ToggleArticleFavoriteResponse, err error)
+	// ToggleArticleLike 切换点赞（需登录）
+	ToggleArticleLike(ctx context.Context, req *ToggleArticleLikeRequest, opts ...http.CallOption) (rsp *ToggleArticleLikeResponse, err error)
 	// UpdateArticle 更新文章：编辑已有文章，可修改标题/简介/封面/正文/状态（草稿或发布），id 在 body 中
 	UpdateArticle(ctx context.Context, req *UpdateArticleRequest, opts ...http.CallOption) (rsp *UpdateArticleResponse, err error)
 }
@@ -292,12 +373,54 @@ func (c *ArticleServiceHTTPClientImpl) ListMyArticles(ctx context.Context, in *L
 	return &out, nil
 }
 
+// ListMyFavoriteArticles 我的收藏：已发布文章，按收藏时间倒序
+func (c *ArticleServiceHTTPClientImpl) ListMyFavoriteArticles(ctx context.Context, in *ListMyFavoriteArticlesRequest, opts ...http.CallOption) (*ListMyFavoriteArticlesResponse, error) {
+	var out ListMyFavoriteArticlesResponse
+	pattern := "/api/articles/favorites/mine"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationArticleServiceListMyFavoriteArticles))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // RecordView 记录文章被浏览一次，用于热度榜统计（article_id 在 body 中）
 func (c *ArticleServiceHTTPClientImpl) RecordView(ctx context.Context, in *RecordViewRequest, opts ...http.CallOption) (*RecordViewResponse, error) {
 	var out RecordViewResponse
 	pattern := "/api/articles/view"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationArticleServiceRecordView))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ToggleArticleFavorite 切换收藏（需登录）
+func (c *ArticleServiceHTTPClientImpl) ToggleArticleFavorite(ctx context.Context, in *ToggleArticleFavoriteRequest, opts ...http.CallOption) (*ToggleArticleFavoriteResponse, error) {
+	var out ToggleArticleFavoriteResponse
+	pattern := "/api/articles/favorite/toggle"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationArticleServiceToggleArticleFavorite))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ToggleArticleLike 切换点赞（需登录）
+func (c *ArticleServiceHTTPClientImpl) ToggleArticleLike(ctx context.Context, in *ToggleArticleLikeRequest, opts ...http.CallOption) (*ToggleArticleLikeResponse, error) {
+	var out ToggleArticleLikeResponse
+	pattern := "/api/articles/like/toggle"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationArticleServiceToggleArticleLike))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

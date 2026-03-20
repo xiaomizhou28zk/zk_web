@@ -9,4 +9,6 @@ import (
 type UserStorage interface {
 	GetUserInfo(ctx context.Context, account string) (*entity.User, error)
 	InsertUser(ctx context.Context, user *entity.User) error
+	UpdateUserProfile(ctx context.Context, account, name, avatar string) error
+	UpdateUserPasswordHash(ctx context.Context, account, passwordHash string) error
 }

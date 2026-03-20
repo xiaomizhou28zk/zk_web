@@ -453,7 +453,17 @@ function getArticle(id) {
   if (!article) return Promise.resolve(null);
   var bodies = getStoredExtraBodies();
   var bodyHtml = bodies[id] !== undefined ? bodies[id] : (ARTICLE_BODIES[id] || '<p>本文为示例文章，暂无更多正文。</p>');
-  return Promise.resolve({ article: article, bodyHtml: bodyHtml });
+  return Promise.resolve({
+    article: article,
+    bodyHtml: bodyHtml,
+    engagement: { likeCount: 12, favoriteCount: 3, liked: false, favorited: false },
+  });
+}
+
+/** mock：我的收藏（离线无接口时使用） */
+function getMyFavoriteArticles(params) {
+  params = params || {};
+  return Promise.resolve({ articles: [], total: 0 });
 }
 
 function getComments(articleId) {
@@ -632,6 +642,20 @@ function getHotRanking(type) {
   return Promise.resolve(entries.slice(0, 10));
 }
 
+/** 将接口返回的文章对象规范为列表卡片用字段（含点赞/收藏数） */
+function mapArticleFromApi(a) {
+  return {
+    id: a.id,
+    title: a.title,
+    summary: a.summary,
+    author: a.author,
+    publishedAt: a.publishedAt || a.published_at,
+    cover: a.cover,
+    likeCount: Number(a.likeCount != null ? a.likeCount : a.like_count) || 0,
+    favoriteCount: Number(a.favoriteCount != null ? a.favoriteCount : a.favorite_count) || 0,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // 使用接口时：用 BlogAPI 替换上述实现，统一走 BLOG_API_BASE
 // ---------------------------------------------------------------------------
@@ -664,17 +688,7 @@ function getHotRanking(type) {
   getFeaturedArticles = function () {
     return api.getFeaturedArticles()
       .then(function (d) {
-        var list = (d.articles || d.list || []).map(function (a) {
-          return {
-            id: a.id,
-            title: a.title,
-            summary: a.summary,
-            author: a.author,
-            publishedAt: a.publishedAt || a.published_at,
-            cover: a.cover,
-          };
-        });
-        return list;
+        return (d.articles || d.list || []).map(mapArticleFromApi);
       })
       .catch(function () { return []; });
   };
@@ -682,17 +696,7 @@ function getHotRanking(type) {
   getArticleList = function (q) {
     return api.getArticles({ q: q || '', page_size: 300 })
       .then(function (d) {
-        var list = (d.articles || d.list || []).map(function (a) {
-          return {
-            id: a.id,
-            title: a.title,
-            summary: a.summary,
-            author: a.author,
-            publishedAt: a.publishedAt || a.published_at,
-            cover: a.cover,
-          };
-        });
-        return list;
+        return (d.articles || d.list || []).map(mapArticleFromApi);
       })
       .catch(function () { return []; });
   };
@@ -701,16 +705,7 @@ function getHotRanking(type) {
   getArticleListPage = function (q, cursor, pageSize) {
     return api.getArticles({ q: q || '', cursor: cursor || '', page_size: pageSize || 15 })
       .then(function (d) {
-        var list = (d.articles || d.list || []).map(function (a) {
-          return {
-            id: a.id,
-            title: a.title,
-            summary: a.summary,
-            author: a.author,
-            publishedAt: a.publishedAt || a.published_at,
-            cover: a.cover,
-          };
-        });
+        var list = (d.articles || d.list || []).map(mapArticleFromApi);
         return { articles: list, nextCursor: d.next_cursor || d.nextCursor || '' };
       })
       .catch(function () { return { articles: [], nextCursor: '' }; });
@@ -721,6 +716,7 @@ function getHotRanking(type) {
       .then(function (d) {
         var art = d.article;
         if (!art) return null;
+        var eg = d.engagement || {};
         return {
           article: {
             id: art.id,
@@ -731,6 +727,12 @@ function getHotRanking(type) {
             cover: art.cover,
           },
           bodyHtml: d.bodyHtml != null ? d.bodyHtml : (d.body_html || ''),
+          engagement: {
+            likeCount: Number(eg.likeCount != null ? eg.likeCount : eg.like_count) || 0,
+            favoriteCount: Number(eg.favoriteCount != null ? eg.favoriteCount : eg.favorite_count) || 0,
+            liked: !!(eg.liked != null ? eg.liked : false),
+            favorited: !!(eg.favorited != null ? eg.favorited : false),
+          },
         };
       })
       .catch(function () { return null; });
@@ -837,5 +839,20 @@ function getHotRanking(type) {
         });
       })
       .catch(function () { return []; });
+  };
+
+  getMyFavoriteArticles = function (params) {
+    return api
+      .getMyFavoriteArticles(params || {})
+      .then(function (d) {
+        var list = d.articles || d.list || [];
+        return {
+          total: d.total != null ? Number(d.total) : 0,
+          articles: list.map(mapArticleFromApi),
+        };
+      })
+      .catch(function () {
+        return { total: 0, articles: [] };
+      });
   };
 })();

@@ -10,7 +10,7 @@
   <header class="site-header">
     <div class="container site-header-inner">
       <div class="header-left">
-        <a href="index.html" class="logo">📚 技术博客</a>
+        <a href="index.html" class="logo">📚 阿瑞之家</a>
         <a href="index.html" class="nav-home">首页</a>
       </div>
       <div class="header-search">
@@ -33,29 +33,32 @@
 
   <main class="container main-content">
     <div class="main-layout">
+      <div class="main-body">
+        <section class="featured-section" aria-label="推荐精选">
+          <h2 class="featured-title">推荐精选</h2>
+          <div class="featured-scroll-outer">
+            <div id="featured-list" class="featured-scroll" role="list"></div>
+          </div>
+        </section>
+        <section class="waterfall-section" aria-label="文章列表">
+          <div id="article-list" class="article-waterfall"></div>
+        </section>
+      </div>
       <aside class="hot-sidebar" aria-label="热度榜">
         <h2 class="hot-sidebar-title">热度榜</h2>
         <div class="hot-tabs" role="tablist">
+          <span class="hot-tabs-glider" aria-hidden="true"></span>
           <button type="button" class="hot-tab is-active" role="tab" aria-selected="true" data-hot="total">总榜</button>
           <button type="button" class="hot-tab" role="tab" aria-selected="false" data-hot="week">周榜</button>
           <button type="button" class="hot-tab" role="tab" aria-selected="false" data-hot="day">日榜</button>
         </div>
         <div id="hot-list" class="hot-list" role="tabpanel"></div>
       </aside>
-      <div class="main-body">
-        <section class="featured-section" aria-label="推荐精选">
-          <h2 class="featured-title">推荐精选</h2>
-          <div id="featured-list" class="featured-scroll" role="list"></div>
-        </section>
-        <section class="waterfall-section" aria-label="文章列表">
-          <div id="article-list" class="article-waterfall"></div>
-        </section>
-      </div>
     </div>
   </main>
 
   <footer class="site-footer">
-    <div class="container">© 2025 技术博客 · 仅供演示</div>
+    <div class="container">© 2025 阿瑞之家 · 仅供演示</div>
   </footer>
 
   <script src="js/config.js"></script>

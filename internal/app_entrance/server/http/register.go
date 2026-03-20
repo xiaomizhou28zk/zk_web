@@ -11,7 +11,8 @@ import (
 	authSrv "github.com/xiaomizhou28zk/zk_web/internal/application/auth"
 	commentSrv "github.com/xiaomizhou28zk/zk_web/internal/application/comment"
 	rankSrv "github.com/xiaomizhou28zk/zk_web/internal/application/rank"
-	userSrv "github.com/xiaomizhou28zk/zk_web/internal/application/user"
+	userSrv 	"github.com/xiaomizhou28zk/zk_web/internal/application/user"
+	domainAuth "github.com/xiaomizhou28zk/zk_web/internal/domain/auth"
 )
 
 type Register interface {
@@ -24,6 +25,7 @@ type register struct {
 	rankSrv    *rankSrv.Service
 	commentSrv *commentSrv.Service
 	articleSrv *articleSrv.Service
+	authMgr    *domainAuth.Manager
 }
 
 func NewRegister(
@@ -32,6 +34,7 @@ func NewRegister(
 	rankSrv *rankSrv.Service,
 	commentSrv *commentSrv.Service,
 	articleSrv *articleSrv.Service,
+	authMgr *domainAuth.Manager,
 ) Register {
 	return &register{
 		userSrv:    userSrv,
@@ -39,10 +42,12 @@ func NewRegister(
 		rankSrv:    rankSrv,
 		commentSrv: commentSrv,
 		articleSrv: articleSrv,
+		authMgr:    authMgr,
 	}
 }
 
 func (r register) RegisterHTTPServer(srv *kratosHttp.Server) {
+	RegisterUploadRoutesAndStatic(srv, r.authMgr)
 	userApi.RegisterUserServiceHTTPServer(srv, r.userSrv)
 	authApi.RegisterAuthServiceHTTPServer(srv, r.authSrv)
 	rankApi.RegisterRankingServiceHTTPServer(srv, r.rankSrv)
