@@ -14,10 +14,46 @@
   const commentContentEl = document.getElementById('comment-content');
   const commentSubmitEl = document.getElementById('comment-submit');
 
+  /** 单行起高，换行/删行时随内容变化（不依赖 field-sizing 的旧浏览器也一致） */
+  function adjustTextareaHeight(el) {
+    if (!el || el.tagName !== 'TEXTAREA') return;
+    var max = el.classList.contains('reply-content') ? 220 : 240;
+    el.style.height = '0px';
+    var sh = el.scrollHeight;
+    if (sh > max) {
+      el.style.height = max + 'px';
+      el.style.overflowY = 'auto';
+    } else {
+      el.style.height = sh + 'px';
+      el.style.overflowY = 'hidden';
+    }
+  }
+
+  function bindTextareaAutoGrow(el) {
+    if (!el || el.getAttribute('data-auto-grow') === '1') return;
+    el.setAttribute('data-auto-grow', '1');
+    el.addEventListener('input', function () {
+      adjustTextareaHeight(el);
+    });
+    /* 隐藏的回复框由展开时的 requestAnimationFrame 再算高 */
+    if (el.offsetParent) adjustTextareaHeight(el);
+  }
+
   function escapeHtml(s) {
     const div = document.createElement('div');
     div.textContent = s;
     return div.innerHTML;
+  }
+
+  /** 头像：http(s) 图片地址用 img，否则按 emoji/文本展示 */
+  function avatarHtml(avatar) {
+    var a = avatar != null ? String(avatar).trim() : '';
+    if (!a) a = '👤';
+    if (/^https?:\/\/.+/i.test(a)) {
+      var src = a.replace(/"/g, '&quot;');
+      return '<img class="user-avatar-img" src="' + src + '" alt="" referrerpolicy="no-referrer" loading="lazy" />';
+    }
+    return escapeHtml(a);
   }
 
   function timeStr() {
@@ -35,10 +71,12 @@
     );
   }
 
-  function renderReply(r, commentId) {
+  /** @param {string} [parentAuthor] 被回复者昵称，用于显示「A 回复 B」 */
+  function renderReply(r, commentId, parentAuthor) {
+    var replyLabel = parentAuthor ? escapeHtml(r.author) + ' 回复 ' + escapeHtml(parentAuthor) : escapeHtml(r.author);
     var nested = (r.replies || [])
       .map(function (nr) {
-        return renderReply(nr, commentId);
+        return renderReply(nr, commentId, r.author);
       })
       .join('');
     return (
@@ -46,14 +84,15 @@
       escapeHtml(commentId) +
       '" data-reply-id="' +
       escapeHtml(r.id) +
+      '" data-reply-author="' +
+      escapeHtml(r.author) +
       '">' +
       '<div class="reply-head">' +
-      '<strong>' +
-      escapeHtml(r.author) +
-      '</strong> ' +
+      '<strong>' + replyLabel + '</strong> ' +
       '<span class="comment-time">' +
       escapeHtml(r.time) +
-      '</span>' +
+      '</span> ' +
+      '<a href="javascript:void(0)" class="reply-link tap-to-reply">回复</a>' +
       '</div>' +
       '<p class="reply-text tap-to-reply">' +
       escapeHtml(r.content) +
@@ -62,7 +101,7 @@
       nested +
       '</ul>' +
       '<div class="reply-form-wrap" style="display:none">' +
-      '<textarea class="reply-content" placeholder="回复内容，Enter 发送 / Shift+Enter 换行" rows="2"></textarea>' +
+      '<textarea class="reply-content" placeholder="回复内容，Enter 发送 / Shift+Enter 换行" rows="1"></textarea>' +
       '<button type="button" class="btn btn-small reply-submit">回复</button>' +
       '</div>' +
       '</li>'
@@ -85,12 +124,14 @@
       .map(function (c) {
         const repliesHtml = (c.replies || [])
           .map(function (r) {
-            return renderReply(r, c.id);
+            return renderReply(r, c.id, c.author);
           })
           .join('');
         return (
           '<li class="comment-item" data-comment-id="' +
           escapeHtml(c.id) +
+          '" data-comment-author="' +
+          escapeHtml(c.author || '') +
           '">' +
           '<div class="comment-head">' +
           '<strong>' +
@@ -98,7 +139,8 @@
           '</strong> ' +
           '<span class="comment-time">' +
           escapeHtml(c.time) +
-          '</span>' +
+          '</span> ' +
+          '<a href="javascript:void(0)" class="reply-link tap-to-reply">回复</a>' +
           '</div>' +
           '<p class="comment-text tap-to-reply">' +
           escapeHtml(c.content) +
@@ -107,7 +149,7 @@
           repliesHtml +
           '</ul>' +
           '<div class="reply-form-wrap" style="display:none">' +
-          '<textarea class="reply-content" placeholder="回复内容，Enter 发送 / Shift+Enter 换行" rows="2"></textarea>' +
+          '<textarea class="reply-content" placeholder="回复内容，Enter 发送 / Shift+Enter 换行" rows="1"></textarea>' +
           '<button type="button" class="btn btn-small reply-submit">回复</button>' +
           '</div>' +
           '</li>'
@@ -115,9 +157,11 @@
       })
       .join('');
 
+    commentListEl.querySelectorAll('.reply-content').forEach(bindTextareaAutoGrow);
+
     commentListEl.querySelectorAll('.tap-to-reply').forEach(function (el) {
       el.addEventListener('click', function () {
-        var container = el.closest('.comment-item') || el.closest('.reply-item');
+        var container = el.closest('.reply-item') || el.closest('.comment-item');
         var wrap = container && container.querySelector(':scope > .reply-form-wrap');
         if (!wrap) return;
         var wasOpen = wrap.style.display === 'block';
@@ -125,11 +169,24 @@
           w.style.display = 'none';
         });
         if (!wasOpen) wrap.style.display = 'block';
+        if (!wasOpen) {
+          var textarea = wrap.querySelector('.reply-content');
+          var author = container.getAttribute('data-reply-author') || container.getAttribute('data-comment-author');
+          textarea.placeholder = author ? '回复 @' + author : '回复内容，Enter 发送 / Shift+Enter 换行';
+          requestAnimationFrame(function () {
+            adjustTextareaHeight(textarea);
+          });
+          textarea.focus();
+        }
       });
     });
 
     commentListEl.querySelectorAll('.reply-submit').forEach(function (btn) {
       btn.addEventListener('click', function () {
+        if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+          window.dispatchEvent(new CustomEvent('blog:openLogin'));
+          return;
+        }
         var formWrap = btn.closest('.reply-form-wrap');
         var container = formWrap && formWrap.parentElement;
         var contentInput = formWrap && formWrap.querySelector('.reply-content');
@@ -137,7 +194,8 @@
         var u = getCurrentUser();
         if (!u || !(u.nickname || '').trim()) return;
         var commentId = container.getAttribute('data-comment-id');
-        var parentReplyId = container.getAttribute('data-reply-id') || undefined;
+        var replyItem = formWrap.closest('.reply-item');
+        var parentReplyId = replyItem ? (replyItem.getAttribute('data-reply-id') || undefined) : undefined;
         var content = contentInput.value.trim();
         if (!content || !commentId) return;
         if (typeof addReply !== 'function') return;
@@ -163,7 +221,7 @@
     var u = getCurrentUser();
     if (!u) return;
     var nick = (u.nickname || '').trim();
-    commentIdentityEl.innerHTML = nick ? '以 <strong>' + escapeHtml(u.avatar + ' ' + nick) + '</strong> 身份评论' : '加载中…';
+    commentIdentityEl.innerHTML = nick ? '以 <strong>' + (avatarHtml(u.avatar) || '') + (u.avatar ? ' ' : '') + escapeHtml(nick) + '</strong> 身份评论' : '加载中…';
     commentIdentityEl.className = 'comment-identity';
   }
 
@@ -179,13 +237,13 @@
       }
       var article = result.article;
       var bodyHtml = result.bodyHtml || '';
-      if (typeof recordArticleView === 'function') recordArticleView(article.id);
+      // 浏览统计由后端 GetArticle 接口内部写入 article_view_log，无需前端再调 recordView
       document.title = article.title + ' - 技术博客';
       if (titleEl) titleEl.textContent = article.title;
       if (metaEl) {
-        var authorStr = (article.author && article.author.avatar) ? article.author.avatar + ' ' : '';
-        authorStr += (article.author && article.author.name) || '';
-        metaEl.innerHTML = '<span class="author">' + escapeHtml(authorStr) + '</span> <time datetime="' + escapeHtml(article.publishedAt || '') + '">' + escapeHtml(article.publishedAt || '') + '</time>';
+        var authorAvatar = (article.author && article.author.avatar) ? avatarHtml(article.author.avatar) : '';
+        var authorName = escapeHtml((article.author && article.author.name) || '');
+        metaEl.innerHTML = '<span class="author">' + (authorAvatar ? authorAvatar + ' ' : '') + authorName + '</span> <time datetime="' + escapeHtml(article.publishedAt || '') + '">' + escapeHtml(article.publishedAt || '') + '</time>';
       }
       if (bodyEl) bodyEl.innerHTML = bodyHtml;
       loadComments();
@@ -198,6 +256,10 @@
 
   if (commentSubmitEl && commentContentEl) {
     commentSubmitEl.addEventListener('click', function () {
+      if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+        window.dispatchEvent(new CustomEvent('blog:openLogin'));
+        return;
+      }
       var u = getCurrentUser();
       if (!u || !(u.nickname || '').trim()) return;
       var content = commentContentEl.value.trim();
@@ -205,6 +267,7 @@
       if (typeof addComment !== 'function') return;
       addComment(id, content).then(function () {
         commentContentEl.value = '';
+        adjustTextareaHeight(commentContentEl);
         return getComments(id);
       }).then(function (list) { renderComments(list); }).catch(function () {});
     });
@@ -214,6 +277,7 @@
         commentSubmitEl.click();
       }
     });
+    bindTextareaAutoGrow(commentContentEl);
   }
 
   commentListEl.addEventListener('keydown', function (e) {

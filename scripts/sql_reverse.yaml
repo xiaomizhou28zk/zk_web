@@ -11,14 +11,17 @@ targets:
   - type: codes
     language: golang
     include_tables: # 需要生成的表的结构
-      - user
+      # - user
+      #- article
+      #- article_view_log
+      - comment
 
     #  exclude_tables: # 排除的表，一般不需要修改，只在include_tables增加增量的表
     #    - c
     #  table_mapper: snake # 表明生成格式, 一般不需要修改
     #  column_mapper: snake # 字段名生成格式， 一般不需要修改
     multiple_files: true
-    output_dir: ./internal/repository/user/po
+    output_dir: ./internal/repository/comment/po
     template: |
       package po
 

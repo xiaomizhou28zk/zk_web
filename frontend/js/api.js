@@ -31,6 +31,16 @@
     return out;
   }
 
+  /** 密码在传输前做 base64 编码（与后端约定） */
+  function base64EncodePassword(str) {
+    if (str == null) return '';
+    try {
+      return btoa(unescape(encodeURIComponent(String(str))));
+    } catch (_) {
+      return btoa(String(str));
+    }
+  }
+
   function request(method, path, body, query) {
     var url = BASE + path;
     if (query && typeof query === 'object') {
@@ -46,23 +56,42 @@
       headers: { 'Content-Type': 'application/json' },
     };
     var token = getToken();
-    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+    if (token) opts.headers['Authorization'] = 'Bearer ' + token; // 登录/注册返回的 token 已写入存储，后续请求统一带此 header
     if (body != null && method !== 'GET') opts.body = JSON.stringify(body);
-    return fetch(url, opts)
-      .then(function (res) {
-        return res.json().catch(function () {
-          return { code: res.status || -1, msg: '请求失败', data: null };
-        });
-      })
-      .then(function (res) {
-        var code = res.code != null ? res.code : res.status;
-        if (code !== 0 && code !== 200) {
-          var err = new Error(res.msg != null ? res.msg : '请求失败');
-          err.code = code;
-          throw err;
+    return fetch(url, opts).then(function (response) {
+      return response.text().then(function (text) {
+        var res;
+        try {
+          res = text ? JSON.parse(text) : {};
+        } catch (_) {
+          if (window.BlogToast && typeof window.BlogToast.show === 'function') {
+            window.BlogToast.show('响应解析失败');
+          }
+          var parseErr = new Error('响应解析失败');
+          parseErr.code = -1;
+          throw parseErr;
         }
-        return toCamel(res.data != null ? res.data : {});
+        if (typeof res.code !== 'number') {
+          if (window.BlogToast && typeof window.BlogToast.show === 'function') {
+            window.BlogToast.show('接口返回格式错误');
+          }
+          var fmtErr = new Error('接口返回格式错误');
+          fmtErr.code = -1;
+          throw fmtErr;
+        }
+        if (res.code !== 0) {
+          var errMsg = res.msg != null && res.msg !== '' ? String(res.msg) : '请求失败';
+          if (window.BlogToast && typeof window.BlogToast.show === 'function') {
+            window.BlogToast.show(errMsg);
+          }
+          var bizErr = new Error(errMsg);
+          bizErr.code = res.code;
+          throw bizErr;
+        }
+        var data = res.data != null ? res.data : {};
+        return toCamel(data);
       });
+    });
   }
 
   window.BlogAPI = {
@@ -74,15 +103,25 @@
     },
 
     login: function (account, password) {
-      return request('POST', '/api/auth/login', { account: account, password: password });
+      return request('POST', '/api/auth/login', { account: account, password: base64EncodePassword(password) })
+        .then(function (data) {
+          if (data && data.token) setToken(data.token);
+          return data;
+        });
     },
 
     register: function (nickname, account, password) {
-      return request('POST', '/api/auth/register', { nickname: nickname, account: account, password: password });
+      return request('POST', '/api/auth/register', { nickname: nickname, account: account, password: base64EncodePassword(password) })
+        .then(function (data) {
+          if (data && data.token) setToken(data.token);
+          return data;
+        });
     },
 
     logout: function () {
-      return request('POST', '/api/auth/logout');
+      return request('POST', '/api/auth/logout').then(function () {
+        setToken('');
+      });
     },
 
     getArticles: function (params) {
@@ -91,6 +130,10 @@
         cursor: params && params.cursor,
         page_size: params && params.page_size,
       });
+    },
+
+    getFeaturedArticles: function () {
+      return request('GET', '/api/articles/featured');
     },
 
     getArticle: function (id) {
@@ -121,6 +164,7 @@
       if (body.cover != null) payload.cover = body.cover;
       if (body.bodyHtml != null) payload.body_html = body.bodyHtml;
       if (body.status != null) payload.status = body.status;
+      if (body.visibility != null) payload.visibility = body.visibility;
       if (body.publishedAt != null) payload.published_at = body.publishedAt;
       return request('POST', '/api/articles/update', payload);
     },
@@ -144,7 +188,9 @@
     },
 
     getHotRanking: function (type) {
-      return request('GET', '/api/articles/ranking', null, { type: type || 'total' });
+      var map = { total: 1, week: 2, day: 3 };
+      var t = map[String(type || 'total').toLowerCase()] || 1;
+      return request('GET', '/api/articles/ranking', null, { type: t, limit: 10 });
     },
   };
 })();

@@ -17,6 +17,7 @@ message Reply {
   string content = 3;      // 回复内容纯文本
   string time = 4;         // 回复时间，如 "2025-03-15 16:30"
   repeated Reply replies = 5; // 子回复列表，递归嵌套
+  string reply_to = 6;     // 被回复者昵称，非空表示「回复某某」
 }
 
 // Comment 单条评论（文章详情页评论列表项）

@@ -98,6 +98,8 @@ func (m *Reply) validate(all bool) error {
 
 	}
 
+	// no validation rules for ReplyTo
+
 	if len(errors) > 0 {
 		return ReplyMultiError(errors)
 	}

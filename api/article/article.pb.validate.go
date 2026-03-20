@@ -199,6 +199,8 @@ func (m *Article) validate(all bool) error {
 
 	// no validation rules for Status
 
+	// no validation rules for Visibility
+
 	if len(errors) > 0 {
 		return ArticleMultiError(errors)
 	}
@@ -521,6 +523,246 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListArticlesResponseValidationError{}
+
+// Validate checks the field values on ListFeaturedArticlesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListFeaturedArticlesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListFeaturedArticlesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListFeaturedArticlesRequestMultiError, or nil if none found.
+func (m *ListFeaturedArticlesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListFeaturedArticlesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ListFeaturedArticlesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListFeaturedArticlesRequestMultiError is an error wrapping multiple
+// validation errors returned by ListFeaturedArticlesRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ListFeaturedArticlesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListFeaturedArticlesRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListFeaturedArticlesRequestMultiError) AllErrors() []error { return m }
+
+// ListFeaturedArticlesRequestValidationError is the validation error returned
+// by ListFeaturedArticlesRequest.Validate if the designated constraints
+// aren't met.
+type ListFeaturedArticlesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListFeaturedArticlesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListFeaturedArticlesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListFeaturedArticlesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListFeaturedArticlesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListFeaturedArticlesRequestValidationError) ErrorName() string {
+	return "ListFeaturedArticlesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListFeaturedArticlesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListFeaturedArticlesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListFeaturedArticlesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListFeaturedArticlesRequestValidationError{}
+
+// Validate checks the field values on ListFeaturedArticlesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListFeaturedArticlesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListFeaturedArticlesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListFeaturedArticlesResponseMultiError, or nil if none found.
+func (m *ListFeaturedArticlesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListFeaturedArticlesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetArticles() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListFeaturedArticlesResponseValidationError{
+						field:  fmt.Sprintf("Articles[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListFeaturedArticlesResponseValidationError{
+						field:  fmt.Sprintf("Articles[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListFeaturedArticlesResponseValidationError{
+					field:  fmt.Sprintf("Articles[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListFeaturedArticlesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListFeaturedArticlesResponseMultiError is an error wrapping multiple
+// validation errors returned by ListFeaturedArticlesResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListFeaturedArticlesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListFeaturedArticlesResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListFeaturedArticlesResponseMultiError) AllErrors() []error { return m }
+
+// ListFeaturedArticlesResponseValidationError is the validation error returned
+// by ListFeaturedArticlesResponse.Validate if the designated constraints
+// aren't met.
+type ListFeaturedArticlesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListFeaturedArticlesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListFeaturedArticlesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListFeaturedArticlesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListFeaturedArticlesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListFeaturedArticlesResponseValidationError) ErrorName() string {
+	return "ListFeaturedArticlesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListFeaturedArticlesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListFeaturedArticlesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListFeaturedArticlesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListFeaturedArticlesResponseValidationError{}
 
 // Validate checks the field values on GetArticleRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -1261,6 +1503,10 @@ func (m *UpdateArticleRequest) validate(all bool) error {
 
 	if m.Status != nil {
 		// no validation rules for Status
+	}
+
+	if m.Visibility != nil {
+		// no validation rules for Visibility
 	}
 
 	if len(errors) > 0 {

@@ -22,6 +22,7 @@ const _ = http.SupportPackageIsVersion1
 const OperationArticleServiceCreateArticle = "/blog.v1.ArticleService/CreateArticle"
 const OperationArticleServiceGetArticle = "/blog.v1.ArticleService/GetArticle"
 const OperationArticleServiceListArticles = "/blog.v1.ArticleService/ListArticles"
+const OperationArticleServiceListFeaturedArticles = "/blog.v1.ArticleService/ListFeaturedArticles"
 const OperationArticleServiceListMyArticles = "/blog.v1.ArticleService/ListMyArticles"
 const OperationArticleServiceRecordView = "/blog.v1.ArticleService/RecordView"
 const OperationArticleServiceUpdateArticle = "/blog.v1.ArticleService/UpdateArticle"
@@ -33,6 +34,8 @@ type ArticleServiceHTTPServer interface {
 	GetArticle(context.Context, *GetArticleRequest) (*GetArticleResponse, error)
 	// ListArticles 文章列表：首页推荐与瀑布流，支持关键词搜索与游标分页
 	ListArticles(context.Context, *ListArticlesRequest) (*ListArticlesResponse, error)
+	// ListFeaturedArticles 推荐精选：从配置文件读取文章 ID 列表，查表返回
+	ListFeaturedArticles(context.Context, *ListFeaturedArticlesRequest) (*ListFeaturedArticlesResponse, error)
 	// ListMyArticles 我的文章列表：当前用户创建的文章（含草稿），支持分页
 	ListMyArticles(context.Context, *ListMyArticlesRequest) (*ListMyArticlesResponse, error)
 	// RecordView 记录文章被浏览一次，用于热度榜统计（article_id 在 body 中）
@@ -44,6 +47,7 @@ type ArticleServiceHTTPServer interface {
 func RegisterArticleServiceHTTPServer(s *http.Server, srv ArticleServiceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/articles", _ArticleService_ListArticles0_HTTP_Handler(srv))
+	r.GET("/api/articles/featured", _ArticleService_ListFeaturedArticles0_HTTP_Handler(srv))
 	r.GET("/api/articles/detail", _ArticleService_GetArticle0_HTTP_Handler(srv))
 	r.GET("/api/articles/mine", _ArticleService_ListMyArticles0_HTTP_Handler(srv))
 	r.POST("/api/articles", _ArticleService_CreateArticle0_HTTP_Handler(srv))
@@ -66,6 +70,25 @@ func _ArticleService_ListArticles0_HTTP_Handler(srv ArticleServiceHTTPServer) fu
 			return err
 		}
 		reply := out.(*ListArticlesResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _ArticleService_ListFeaturedArticles0_HTTP_Handler(srv ArticleServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListFeaturedArticlesRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationArticleServiceListFeaturedArticles)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListFeaturedArticles(ctx, req.(*ListFeaturedArticlesRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListFeaturedArticlesResponse)
 		return ctx.Result(200, reply)
 	}
 }
@@ -181,6 +204,8 @@ type ArticleServiceHTTPClient interface {
 	GetArticle(ctx context.Context, req *GetArticleRequest, opts ...http.CallOption) (rsp *GetArticleResponse, err error)
 	// ListArticles 文章列表：首页推荐与瀑布流，支持关键词搜索与游标分页
 	ListArticles(ctx context.Context, req *ListArticlesRequest, opts ...http.CallOption) (rsp *ListArticlesResponse, err error)
+	// ListFeaturedArticles 推荐精选：从配置文件读取文章 ID 列表，查表返回
+	ListFeaturedArticles(ctx context.Context, req *ListFeaturedArticlesRequest, opts ...http.CallOption) (rsp *ListFeaturedArticlesResponse, err error)
 	// ListMyArticles 我的文章列表：当前用户创建的文章（含草稿），支持分页
 	ListMyArticles(ctx context.Context, req *ListMyArticlesRequest, opts ...http.CallOption) (rsp *ListMyArticlesResponse, err error)
 	// RecordView 记录文章被浏览一次，用于热度榜统计（article_id 在 body 中）
@@ -231,6 +256,20 @@ func (c *ArticleServiceHTTPClientImpl) ListArticles(ctx context.Context, in *Lis
 	pattern := "/api/articles"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationArticleServiceListArticles))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ListFeaturedArticles 推荐精选：从配置文件读取文章 ID 列表，查表返回
+func (c *ArticleServiceHTTPClientImpl) ListFeaturedArticles(ctx context.Context, in *ListFeaturedArticlesRequest, opts ...http.CallOption) (*ListFeaturedArticlesResponse, error) {
+	var out ListFeaturedArticlesResponse
+	pattern := "/api/articles/featured"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationArticleServiceListFeaturedArticles))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

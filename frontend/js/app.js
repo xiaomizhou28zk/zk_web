@@ -8,8 +8,8 @@
 
   var FEATURED_MAX = 10;
   var LIST_PAGE_SIZE = 15;
-  var restList = [];
-  var listPage = 0;
+  var nextCursor = '';
+  var isLoadingMore = false;
   var listUrl = '';
 
   function getParams() {
@@ -42,16 +42,55 @@
     return div.innerHTML;
   }
 
+  /** 图片 URL 或 emoji：http(s) 用 img，否则按文本展示。cls 可选，如 'user-avatar-img' */
+  function mediaHtml(val, defaultVal, cls) {
+    var v = (val != null && String(val).trim()) ? String(val).trim() : (defaultVal || '');
+    if (!v) return '';
+    if (/^https?:\/\//i.test(v)) {
+      var src = (v + '').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      var c = (cls != null && String(cls).trim()) ? ' class="' + String(cls).replace(/"/g, '&quot;') + '"' : '';
+      return '<img' + c + ' src="' + src + '" alt="" referrerpolicy="no-referrer" loading="lazy" />';
+    }
+    return escapeHtml(v);
+  }
+
+  /** 列表无文章时的占位（与卡片区视觉统一） */
+  function articleEmptyStateHtml(q) {
+    var hint = q
+      ? '没有找到与当前搜索相关的文章，换个关键词试试'
+      : '这里还没有文章，稍后再来看看吧';
+    return (
+      '<div class="article-empty-state" role="status">' +
+      '<div class="article-empty-icon" aria-hidden="true">📄</div>' +
+      '<p class="article-empty-title">暂无内容</p>' +
+      '<p class="article-empty-hint">' + escapeHtml(hint) + '</p>' +
+      '</div>'
+    );
+  }
+
+  function articleErrorStateHtml() {
+    return (
+      '<div class="article-empty-state article-empty-state--error" role="alert">' +
+      '<div class="article-empty-icon" aria-hidden="true">⚠️</div>' +
+      '<p class="article-empty-title">加载失败</p>' +
+      '<p class="article-empty-hint">请检查网络后刷新页面重试</p>' +
+      '</div>'
+    );
+  }
+
   function cardHtml(a, listUrl) {
     var articleUrl = 'article.html?id=' + a.id + (listUrl !== 'index.html' ? '&from=' + encodeURIComponent(listUrl) : '');
+    var coverHtml = mediaHtml(a.cover, '📝', 'card-cover-img') || '📝';
+    var authorAvatar = (a.author && a.author.avatar) ? mediaHtml(a.author.avatar, '', 'user-avatar-img') : '';
+    var authorName = escapeHtml((a.author && a.author.name) || '');
     return (
       '<article class="card" data-id="' + a.id + '">' +
-      '<div class="card-cover">' + (a.cover || '📝') + '</div>' +
+      '<div class="card-cover">' + coverHtml + '</div>' +
       '<div class="card-body">' +
       '<h2 class="card-title"><a href="' + escapeHtml(articleUrl) + '">' + escapeHtml(a.title) + '</a></h2>' +
       '<p class="card-summary">' + escapeHtml(a.summary || '') + '</p>' +
       '<div class="card-meta">' +
-      '<span class="author">' + (a.author && a.author.avatar ? a.author.avatar + ' ' : '') + escapeHtml((a.author && a.author.name) || '') + '</span> ' +
+      '<span class="author">' + (authorAvatar ? authorAvatar + ' ' : '') + authorName + '</span> ' +
       '<time datetime="' + escapeHtml(a.publishedAt || '') + '">' + (a.publishedAt || '') + '</time>' +
       '</div>' +
       '</div>' +
@@ -62,23 +101,16 @@
   function renderHotRanking(type) {
     if (!hotListEl || typeof getHotRanking !== 'function') return;
     var listUrl = buildListUrl({});
-    getArticleList()
-      .then(function (articles) {
-        var idToTitle = {};
-        (articles || []).forEach(function (a) { idToTitle[a.id] = a.title; });
-        return getHotRanking(type).then(function (ranking) {
-          return { idToTitle: idToTitle, ranking: ranking || [], listUrl: listUrl };
-        });
-      })
-      .then(function (o) {
-        if (!o.ranking.length) {
+    getHotRanking(type)
+      .then(function (ranking) {
+        if (!ranking || !ranking.length) {
           hotListEl.innerHTML = '<p class="hot-empty">暂无浏览数据</p>';
           return;
         }
-        hotListEl.innerHTML = o.ranking.map(function (item, index) {
+        hotListEl.innerHTML = ranking.map(function (item, index) {
           var rank = index + 1;
-          var title = o.idToTitle[item.id] || '未知文章';
-          var articleUrl = 'article.html?id=' + item.id + (o.listUrl !== 'index.html' ? '&from=' + encodeURIComponent(o.listUrl) : '');
+          var title = (item.title || '').trim() || '未知文章';
+          var articleUrl = 'article.html?id=' + item.id + (listUrl !== 'index.html' ? '&from=' + encodeURIComponent(listUrl) : '');
           return '<div class="hot-item rank-' + rank + '"><span class="hot-item-rank">' + rank + '</span><a href="' + escapeHtml(articleUrl) + '" class="hot-item-link" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</a><span class="hot-item-views">' + item.views + ' 次</span></div>';
         }).join('');
       })
@@ -104,67 +136,99 @@
   }
 
   function loadNextPage() {
-    var start = listPage * LIST_PAGE_SIZE;
-    var chunk = restList.slice(start, start + LIST_PAGE_SIZE);
-    if (chunk.length === 0) return;
-    listPage++;
-    appendListItems(chunk);
+    var q = getParams().q;
+    if (isLoadingMore || !nextCursor) return;
+    if (typeof getArticleListPage !== 'function') return;
+    isLoadingMore = true;
+    setSentinelLoading(true);
+    getArticleListPage(q, nextCursor, LIST_PAGE_SIZE)
+      .then(function (res) {
+        nextCursor = res.nextCursor || '';
+        var toAppend = res.articles || [];
+        if (toAppend.length) appendListItems(toAppend);
+        ensureSentinel();
+      })
+      .catch(function () {
+        nextCursor = '';
+        ensureSentinel();
+      })
+      .then(function () {
+        isLoadingMore = false;
+        setSentinelLoading(false);
+      });
   }
 
   function render() {
     var q = getParams().q;
     listUrl = buildListUrl({});
-    getArticleList(q)
-      .then(function (list) {
-        var filtered = filterArticles(list || [], q);
-        var featured = filtered.slice(0, FEATURED_MAX);
-        restList = filtered.slice(FEATURED_MAX);
-        listPage = 0;
-
-        if (featuredEl) {
-          if (featured.length === 0) {
-            featuredEl.innerHTML = '';
-            featuredEl.closest('.featured-section').style.display = 'none';
-          } else {
-            featuredEl.closest('.featured-section').style.display = '';
-            featuredEl.innerHTML = featured.map(function (a) {
-              return '<div class="featured-card" role="listitem">' + cardHtml(a, listUrl) + '</div>';
-            }).join('');
-          }
-        }
-
-        listEl.innerHTML = '';
-        if (restList.length === 0 && featured.length === 0) {
-          listEl.innerHTML = '<p class="empty-tip">没有找到相关文章，试试其他关键词。</p>';
-        } else if (restList.length === 0) {
-          listEl.innerHTML = '';
-        } else {
-          loadNextPage();
-          ensureSentinel();
-        }
-
-        listEl.querySelectorAll('.card .card-title a').forEach(function (link) {
-          link.addEventListener('click', function (e) { e.preventDefault(); location.href = this.getAttribute('href'); });
-        });
-        if (featuredEl) {
-          featuredEl.querySelectorAll('.card .card-title a').forEach(function (link) {
-            link.addEventListener('click', function (e) { e.preventDefault(); location.href = this.getAttribute('href'); });
-          });
-        }
+    nextCursor = '';
+    isLoadingMore = false;
+    var featuredPromise = (typeof getFeaturedArticles === 'function') ? getFeaturedArticles() : Promise.resolve([]);
+    var firstPagePromise = (typeof getArticleListPage === 'function') ? getArticleListPage(q, '', LIST_PAGE_SIZE) : Promise.resolve({ articles: [], nextCursor: '' });
+    Promise.all([featuredPromise, firstPagePromise])
+      .then(function (arr) {
+        var featured = arr[0] || [];
+        var firstRes = arr[1] || {};
+        var firstPage = firstRes.articles || [];
+        var featIds = {};
+        featured.forEach(function (a) { featIds[a.id] = true; });
+        var toShow = firstPage.filter(function (a) { return !featIds[a.id]; });
+        nextCursor = firstRes.nextCursor || '';
+        return { featured: featured, firstPage: toShow };
+      })
+      .then(function (o) {
+        applyRender(o.featured, o.firstPage);
+        if (hotListEl && typeof renderHotRanking === 'function') renderHotRanking('total');
       })
       .catch(function () {
-        listEl.innerHTML = '<p class="empty-tip">加载失败，请稍后重试。</p>';
+        listEl.innerHTML = articleErrorStateHtml();
       });
+  }
+
+  function applyRender(featured, firstPage) {
+    if (featuredEl) {
+      if (featured.length === 0) {
+        featuredEl.innerHTML = '';
+        featuredEl.closest('.featured-section').style.display = 'none';
+      } else {
+        featuredEl.closest('.featured-section').style.display = '';
+        featuredEl.innerHTML = featured.map(function (a) {
+          return '<div class="featured-card" role="listitem">' + cardHtml(a, listUrl) + '</div>';
+        }).join('');
+      }
+    }
+
+    listEl.innerHTML = '';
+    if (firstPage.length === 0) {
+      listEl.innerHTML = articleEmptyStateHtml(getParams().q);
+    } else {
+      appendListItems(firstPage);
+    }
+    ensureSentinel();
+
+    listEl.querySelectorAll('.card .card-title a').forEach(function (link) {
+      link.addEventListener('click', function (e) { e.preventDefault(); location.href = this.getAttribute('href'); });
+    });
+    if (featuredEl) {
+      featuredEl.querySelectorAll('.card .card-title a').forEach(function (link) {
+        link.addEventListener('click', function (e) { e.preventDefault(); location.href = this.getAttribute('href'); });
+      });
+    }
+  }
+
+  function setSentinelLoading(loading) {
+    var wrap = document.getElementById('list-load-sentinel-wrap');
+    if (!wrap) return;
+    var spinner = wrap.querySelector('.list-load-spinner');
+    var text = wrap.querySelector('.list-load-text');
+    if (spinner) spinner.style.display = loading ? 'inline-block' : 'none';
+    if (text) text.textContent = loading ? '加载中…' : '';
   }
 
   function onScroll() {
     var sentinel = document.getElementById('list-load-sentinel');
-    if (!sentinel || restList.length === 0) return;
-    var loaded = listPage * LIST_PAGE_SIZE;
-    if (loaded >= restList.length) {
-      if (sentinel.parentNode) sentinel.parentNode.removeChild(sentinel);
-      return;
-    }
+    if (!sentinel || isLoadingMore) return;
+    if (!nextCursor) return;
     var rect = sentinel.getBoundingClientRect();
     if (rect.top <= (window.innerHeight || document.documentElement.clientHeight) + 200) {
       loadNextPage();
@@ -172,14 +236,15 @@
   }
 
   function ensureSentinel() {
-    var existing = document.getElementById('list-load-sentinel');
+    var existing = document.getElementById('list-load-sentinel-wrap');
     if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
-    if (!listEl || restList.length <= listPage * LIST_PAGE_SIZE) return;
-    var div = document.createElement('div');
-    div.id = 'list-load-sentinel';
-    div.className = 'list-load-sentinel';
-    div.setAttribute('aria-hidden', 'true');
-    listEl.appendChild(div);
+    if (!listEl || !nextCursor) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'list-load-sentinel-wrap';
+    wrap.className = 'list-load-sentinel-wrap';
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.innerHTML = '<div id="list-load-sentinel" class="list-load-sentinel"></div><div class="list-load-spinner" style="display:none;"></div><div class="list-load-text"></div>';
+    listEl.appendChild(wrap);
   }
 
   function syncControlsFromUrl() {
@@ -196,8 +261,15 @@
   }
 
   syncControlsFromUrl();
-  render();
-  renderHotRanking('total');
+  render(); // render 内部会调用 renderHotRanking 并传入首屏 idToTitle，无需单独请求
+
+  // 仅当从 bfcache 恢复时刷新热度榜（避免首屏加载时重复请求）
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    var activeTab = hotTabsEl && hotTabsEl.querySelector('.hot-tab.is-active');
+    var type = activeTab ? (activeTab.getAttribute('data-hot') || 'total') : 'total';
+    renderHotRanking(type);
+  });
 
   if (hotTabsEl) {
     hotTabsEl.querySelectorAll('.hot-tab').forEach(function (tab) {
@@ -215,18 +287,14 @@
     });
   }
 
+  var searchBtnEl = document.getElementById('search-btn');
   if (searchInputEl) {
-    var searchTimeout;
-    searchInputEl.addEventListener('input', function () {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(applySearch, 280);
-    });
     searchInputEl.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        clearTimeout(searchTimeout);
-        applySearch();
-      }
+      if (e.key === 'Enter') applySearch();
     });
+  }
+  if (searchBtnEl) {
+    searchBtnEl.addEventListener('click', applySearch);
   }
 
   var backToTop = document.createElement('button');

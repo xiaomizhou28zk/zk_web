@@ -59,6 +59,8 @@ func (m *HotRankItem) validate(all bool) error {
 
 	// no validation rules for ArticleId
 
+	// no validation rules for Title
+
 	// no validation rules for Views
 
 	if len(errors) > 0 {

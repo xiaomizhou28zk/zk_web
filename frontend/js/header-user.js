@@ -8,8 +8,20 @@
     return div.innerHTML;
   }
 
+  /** 头像：http(s) 图片地址用 img，否则按 emoji/文本展示 */
+  function avatarHtml(avatar) {
+    var a = avatar != null ? String(avatar).trim() : '';
+    if (!a) a = '👤';
+    if (/^https?:\/\/.+/i.test(a)) {
+      var src = a.replace(/"/g, '&quot;');
+      return '<img class="user-avatar-img" src="' + src + '" alt="" referrerpolicy="no-referrer" loading="lazy" />';
+    }
+    return escapeHtml(a);
+  }
+
   function renderTrigger(u) {
-    var avatar = u ? (u.avatar || '👤') : '👤';
+    var rawAvatar = u ? (u.avatar || '👤') : '👤';
+    var avatarInner = avatarHtml(rawAvatar);
     var nick = u && u.nickname ? escapeHtml(u.nickname) : '未登录';
     var bio = u && u.bio ? escapeHtml(u.bio) : '';
     var actions =
@@ -23,12 +35,12 @@
     }
     el.innerHTML =
       '<button type="button" class="header-user-trigger" aria-expanded="false" aria-haspopup="true" aria-controls="header-user-popover">' +
-      '<span class="header-user-avatar">' + avatar + '</span>' +
+      '<span class="header-user-avatar">' + avatarInner + '</span>' +
       '<span class="header-user-nickname">' + nick + '</span>' +
       '</button>' +
       '<div class="header-user-popover" id="header-user-popover" role="dialog" aria-label="用户菜单" hidden>' +
       '<div class="popover-user">' +
-      '<span class="popover-avatar" id="popover-avatar">' + avatar + '</span>' +
+      '<span class="popover-avatar" id="popover-avatar">' + avatarInner + '</span>' +
       '<span class="popover-nickname" id="popover-nickname">' + nick + '</span>' +
       '<p class="popover-bio" id="popover-bio">' + bio + '</p>' +
       '</div>' +
@@ -129,8 +141,13 @@
   }
 
   function refreshHeader() {
-    fetchUserInfo().then(function (u) {
+    var u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+    if (u) {
       renderTrigger(u);
+      bindPopoverAndAuth();
+    }
+    fetchUserInfo().then(function (u2) {
+      renderTrigger(u2 || u);
       bindPopoverAndAuth();
     });
   }
@@ -182,6 +199,24 @@
       logout();
       refreshHeader();
     });
+    var profileLink = el.querySelector('a[href="profile.html"]');
+    var myArticlesLink = el.querySelector('a[href="my-articles.html"]');
+    if (profileLink) {
+      profileLink.addEventListener('click', function (e) {
+        if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+          e.preventDefault();
+          location.href = 'index.html?needLogin=1';
+        }
+      });
+    }
+    if (myArticlesLink) {
+      myArticlesLink.addEventListener('click', function (e) {
+        if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+          e.preventDefault();
+          location.href = 'index.html?needLogin=1';
+        }
+      });
+    }
   }
 
   function bindAuthModal() {
@@ -291,6 +326,23 @@
     }
   }
 
+  (function bindPublishLink() {
+    var publishLink = document.querySelector('.nav-add-dropdown a[href="publish.html"]');
+    if (publishLink) {
+      publishLink.addEventListener('click', function (e) {
+        if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+          e.preventDefault();
+          location.href = 'index.html?needLogin=1';
+        }
+      });
+    }
+  })();
+
+  window.addEventListener('blog:openLogin', function () {
+    ensureAuthModal();
+    openAuthModal('login');
+  });
+
   el.textContent = '加载中…';
   fetchUserInfo()
     .then(function (u) {
@@ -298,8 +350,19 @@
       bindPopoverAndAuth();
       ensureAuthModal();
       bindAuthModal();
+      if (typeof location !== 'undefined' && location.search && location.search.indexOf('needLogin=1') !== -1) {
+        openAuthModal('login');
+      }
     })
     .catch(function () {
-      el.textContent = '加载失败';
+      renderTrigger(null);
+      bindPopoverAndAuth();
+      ensureAuthModal();
+      bindAuthModal();
+      if (typeof location !== 'undefined' && location.search && location.search.indexOf('needLogin=1') !== -1) {
+        openAuthModal('login');
+      } else {
+        el.textContent = '加载失败';
+      }
     });
 })();

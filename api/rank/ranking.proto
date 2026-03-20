@@ -18,10 +18,11 @@ enum HotRankType {
   DAY = 3;  // 日榜：仅统计过去 24 小时内的浏览次数
 }
 
-// HotRankItem 热度榜单项（文章 ID + 浏览次数）
+// HotRankItem 热度榜单项（文章 ID + 标题 + 浏览次数）
 message HotRankItem {
-  int64 article_id = 1; // 文章 ID，前端用于展示标题与跳转
-  int64 views = 2;      // 在该统计维度下的浏览次数
+  int64 article_id = 1;  // 文章 ID，前端用于跳转
+  string title = 2;       // 文章标题，榜单直接展示
+  int64 views = 3;        // 在该统计维度下的浏览次数
 }
 
 // GetHotRankingRequest 获取热度榜请求（首页侧栏：总榜 / 周榜 / 日榜）

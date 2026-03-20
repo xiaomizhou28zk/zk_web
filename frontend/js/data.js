@@ -385,6 +385,33 @@ function getArticleList(q) {
   return Promise.resolve(list);
 }
 
+/** 分页获取文章列表：返回 { articles, nextCursor }。mock 模式下基于 getArticleList 切片。 */
+function getArticleListPage(q, cursor, pageSize) {
+  return getArticleList(q).then(function (list) {
+    var filtered = (list || []).filter(function (a) {
+      if (!q) return true;
+      var ql = q.toLowerCase();
+      return (
+        (a.title && a.title.toLowerCase().indexOf(ql) !== -1) ||
+        (a.summary && a.summary.toLowerCase().indexOf(ql) !== -1) ||
+        (a.author && a.author.name && a.author.name.toLowerCase().indexOf(ql) !== -1)
+      );
+    });
+    var offset = cursor ? (parseInt(cursor, 10) || 0) : 0;
+    var chunk = filtered.slice(offset, offset + (pageSize || 15));
+    var nextCursor = offset + chunk.length < filtered.length ? String(offset + chunk.length) : '';
+    return { articles: chunk, nextCursor: nextCursor };
+  });
+}
+
+/** 推荐精选文章：mock 模式下取前 10 条；API 模式下由 /api/articles/featured 返回 */
+function getFeaturedArticles() {
+  var extra = getStoredExtraArticles();
+  var published = extra.filter(function (a) { return a.status !== 'draft'; });
+  var list = published.concat(BLOG_ARTICLES);
+  return Promise.resolve(list.slice(0, 10));
+}
+
 /** 当前用户写的文章（仅 localStorage 中的 extra），含草稿与已发布 */
 function getMyArticles() {
   var user = getCurrentUser();
@@ -392,6 +419,19 @@ function getMyArticles() {
   if (!nickname) return Promise.resolve([]);
   var list = getStoredExtraArticles().filter(function (a) {
     return a.author && a.author.name === nickname;
+  }).map(function (a) {
+    var vis = a.visibility != null ? Number(a.visibility) : 1;
+    if (vis !== 2) vis = 1;
+    return {
+      id: a.id,
+      title: a.title,
+      summary: a.summary,
+      author: a.author,
+      publishedAt: a.publishedAt,
+      cover: a.cover,
+      status: a.status === 'draft' ? 'draft' : 'published',
+      visibility: vis,
+    };
   });
   return Promise.resolve(list);
 }
@@ -486,12 +526,17 @@ function updateArticle(id, article, bodyHtml, status) {
     if (article.publishedAt !== undefined) list[idx].publishedAt = article.publishedAt;
   }
   if (status !== undefined) list[idx].status = status;
+  if (article && article.visibility !== undefined) list[idx].visibility = article.visibility;
   if (bodyHtml !== undefined) bodies[id] = bodyHtml;
   try {
     localStorage.setItem('blog_articles_extra', JSON.stringify(list));
     localStorage.setItem('blog_bodies_extra', JSON.stringify(bodies));
   } catch (_) {}
   return Promise.resolve(true);
+}
+
+function setArticleVisibility(id, visibility) {
+  return updateArticle(id, { visibility: visibility }, undefined, undefined);
 }
 
 function getArticleBody(id) {
@@ -510,6 +555,7 @@ function addArticle(article, bodyHtml, status) {
   );
   article.id = maxId + 1;
   article.status = status === 'draft' ? 'draft' : 'published';
+  if (article.visibility == null) article.visibility = 1;
   list.unshift(article);
   bodies[article.id] = bodyHtml;
   try {
@@ -597,11 +643,15 @@ function getHotRanking(type) {
     return api.getUserMe()
       .then(function (d) {
         _currentUser = (d && d.user) ? d.user : null;
+        try {
+          if (_currentUser) localStorage.setItem(BLOG_USER_KEY, JSON.stringify(_currentUser));
+          else localStorage.removeItem(BLOG_USER_KEY);
+        } catch (_) {}
         return _currentUser;
       })
       .catch(function () {
-        _currentUser = null;
-        return null;
+        // 接口失败（如未鉴权、/user/me 未实现）时保留当前已登录状态，避免登录后 refreshHeader 被清空
+        return _currentUser;
       });
   };
 
@@ -609,6 +659,24 @@ function getHotRanking(type) {
     api.logout().catch(function () {});
     if (api.setToken) api.setToken('');
     setCurrentUser(null);
+  };
+
+  getFeaturedArticles = function () {
+    return api.getFeaturedArticles()
+      .then(function (d) {
+        var list = (d.articles || d.list || []).map(function (a) {
+          return {
+            id: a.id,
+            title: a.title,
+            summary: a.summary,
+            author: a.author,
+            publishedAt: a.publishedAt || a.published_at,
+            cover: a.cover,
+          };
+        });
+        return list;
+      })
+      .catch(function () { return []; });
   };
 
   getArticleList = function (q) {
@@ -627,6 +695,25 @@ function getHotRanking(type) {
         return list;
       })
       .catch(function () { return []; });
+  };
+
+  /** 分页获取文章列表，供瀑布流下拉加载。返回 { articles, nextCursor } */
+  getArticleListPage = function (q, cursor, pageSize) {
+    return api.getArticles({ q: q || '', cursor: cursor || '', page_size: pageSize || 15 })
+      .then(function (d) {
+        var list = (d.articles || d.list || []).map(function (a) {
+          return {
+            id: a.id,
+            title: a.title,
+            summary: a.summary,
+            author: a.author,
+            publishedAt: a.publishedAt || a.published_at,
+            cover: a.cover,
+          };
+        });
+        return { articles: list, nextCursor: d.next_cursor || d.nextCursor || '' };
+      })
+      .catch(function () { return { articles: [], nextCursor: '' }; });
   };
 
   getArticle = function (id) {
@@ -658,6 +745,8 @@ function getHotRanking(type) {
       .then(function (d) {
         var list = d.articles || d.list || [];
         return list.map(function (a) {
+          var vis = a.visibility != null ? Number(a.visibility) : 1;
+          if (vis !== 2) vis = 1;
           return {
             id: a.id,
             title: a.title,
@@ -666,6 +755,7 @@ function getHotRanking(type) {
             publishedAt: a.publishedAt || a.published_at,
             cover: a.cover,
             status: a.status === 'draft' || a.status === 1 ? 'draft' : 'published',
+            visibility: vis,
           };
         });
       })
@@ -705,9 +795,15 @@ function getHotRanking(type) {
     if (article && article.summary != null) payload.summary = article.summary;
     if (article && article.cover != null) payload.cover = article.cover;
     if (article && article.publishedAt != null) payload.publishedAt = article.publishedAt;
+    if (article && article.visibility != null) payload.visibility = article.visibility;
     if (bodyHtml != null) payload.bodyHtml = bodyHtml;
     if (status != null) payload.status = status;
     return api.updateArticle(id, payload).then(function () { return true; }).catch(function () { return false; });
+  };
+
+  /** 仅更新首页/推荐可见性：1 可见，2 隐藏 */
+  setArticleVisibility = function (id, visibility) {
+    return api.updateArticle(id, { visibility: visibility }).then(function () { return true; }).catch(function () { return false; });
   };
 
   getComments = function (articleId) {
@@ -732,7 +828,13 @@ function getHotRanking(type) {
     return api.getHotRanking(type || 'total')
       .then(function (d) {
         var list = d.items || d.list || [];
-        return list.map(function (x) { return { id: x.articleId || x.id, views: x.views || 0 }; });
+        return list.map(function (x) {
+          return {
+            id: x.articleId || x.article_id || x.id,
+            title: x.title || '',
+            views: x.views || 0
+          };
+        });
       })
       .catch(function () { return []; });
   };

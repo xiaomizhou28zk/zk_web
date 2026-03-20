@@ -1,4 +1,8 @@
 (function () {
+  if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+    location.href = 'index.html?needLogin=1';
+    return;
+  }
   var listEl = document.getElementById('my-articles-list');
   var paginationEl = document.getElementById('pagination');
   var pageSizeSelectEl = document.getElementById('page-size');
@@ -53,16 +57,41 @@
         var statusClass = a.status === 'draft' ? 'my-articles-status-draft' : 'my-articles-status-pub';
         var date = a.publishedAt || '—';
         var editHref = 'publish.html?id=' + a.id;
+        var visOn = Number(a.visibility) !== 2;
         return (
           '<div class="my-articles-row" data-id="' + a.id + '">' +
           '<a href="' + escapeHtml('article.html?id=' + a.id) + '" class="my-articles-title">' + escapeHtml(a.title) + '</a>' +
           '<span class="my-articles-date">' + escapeHtml(date) + '</span>' +
           '<span class="my-articles-status ' + statusClass + '">' + statusText + '</span>' +
+          '<div class="my-articles-vis-cell" title="关闭后文章仍可通过链接打开，但首页列表与推荐不再展示">' +
+          '<span class="my-articles-vis-label">首页展示</span>' +
+          '<button type="button" class="my-articles-vis-switch' + (visOn ? ' is-on' : '') + '" role="switch" aria-checked="' + visOn + '" data-id="' + a.id + '" aria-label="首页展示"></button>' +
+          '</div>' +
           '<a href="' + escapeHtml(editHref) + '" class="my-articles-edit">编辑</a>' +
           '</div>'
         );
       })
       .join('');
+
+    listEl.querySelectorAll('.my-articles-vis-switch').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var id = parseInt(btn.getAttribute('data-id'), 10);
+        if (isNaN(id) || typeof setArticleVisibility !== 'function') return;
+        var nowOn = btn.classList.contains('is-on');
+        var nextOn = !nowOn;
+        var nextVis = nextOn ? 1 : 2;
+        btn.disabled = true;
+        setArticleVisibility(id, nextVis).then(function (ok) {
+          btn.disabled = false;
+          if (ok) {
+            btn.classList.toggle('is-on', nextOn);
+            btn.setAttribute('aria-checked', String(nextOn));
+          }
+        });
+      });
+    });
 
     var parts = [];
     if (page > 1) {

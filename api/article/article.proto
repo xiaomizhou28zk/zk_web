@@ -32,6 +32,8 @@ message Article {
   string published_at = 5; // 发布时间，建议格式 "2025-03-15 14:30"
   string cover = 6;        // 封面：emoji 或图片 URL，列表卡片展示
   ArticleStatus status = 7; // 状态：草稿 / 已发布（我的文章列表需返回草稿）
+  // 可见性：1=首页与推荐可见，2=隐藏（不展示在首页列表与推荐，详情仍可访问）
+  int32 visibility = 8;
 }
 
 // ListArticlesRequest 文章列表请求（首页推荐精选 + 瀑布流列表、搜索）
@@ -45,6 +47,14 @@ message ListArticlesRequest {
 message ListArticlesResponse {
   repeated Article articles = 1; // 当前页文章列表，按发布时间倒序（最新在前）
   string next_cursor = 2;         // 下一页游标；空表示没有更多
+}
+
+// ListFeaturedArticlesRequest 推荐精选请求（无参数，从配置读取 ID）
+message ListFeaturedArticlesRequest {}
+
+// ListFeaturedArticlesResponse 推荐精选响应（复用文章列表结构，无分页）
+message ListFeaturedArticlesResponse {
+  repeated Article articles = 1; // 精选文章列表，按配置顺序
 }
 
 // GetArticleRequest 获取单篇文章详情请求（文章详情页）
@@ -92,6 +102,7 @@ message UpdateArticleRequest {
   optional string cover = 4;          // 新封面
   optional string body_html = 5;      // 新正文 HTML
   optional ArticleStatus status = 6;  // 更新为草稿或已发布；改为 PUBLISHED 时若无 published_at 可补全
+  optional int32 visibility = 7;      // 1=首页/推荐可见，2=隐藏；仅改可见性时只传 id 与本字段
 }
 
 // UpdateArticleResponse 更新文章响应
@@ -112,6 +123,11 @@ service ArticleService {
   // 文章列表：首页推荐与瀑布流，支持关键词搜索与游标分页
   rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse) {
     option (google.api.http) = { get: "/api/articles" };
+  }
+
+  // 推荐精选：从配置文件读取文章 ID 列表，查表返回
+  rpc ListFeaturedArticles(ListFeaturedArticlesRequest) returns (ListFeaturedArticlesResponse) {
+    option (google.api.http) = { get: "/api/articles/featured" };
   }
 
   // 文章详情：单篇元数据 + 正文 HTML，用于文章详情页（id 通过 query 传递）

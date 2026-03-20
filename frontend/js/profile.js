@@ -1,4 +1,8 @@
 (function () {
+  if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+    location.href = 'index.html?needLogin=1';
+    return;
+  }
   var loadingEl = document.getElementById('profile-loading');
   var cardEl = document.getElementById('profile-card');
   var cardAvatar = document.getElementById('card-avatar');
@@ -11,12 +15,23 @@
     return div.innerHTML;
   }
 
+  function setAvatarEl(el, avatar) {
+    if (!el) return;
+    var a = (avatar != null && String(avatar).trim()) ? String(avatar).trim() : '👤';
+    if (/^https?:\/\/.+/i.test(a)) {
+      var src = a.replace(/"/g, '&quot;');
+      el.innerHTML = '<img class="user-avatar-img" src="' + src + '" alt="" referrerpolicy="no-referrer" loading="lazy" />';
+    } else {
+      el.textContent = a;
+    }
+  }
+
   fetchUserInfo()
     .then(function (u) {
       if (loadingEl) loadingEl.style.display = 'none';
       if (cardEl) cardEl.style.display = 'flex';
-      if (cardAvatar) cardAvatar.textContent = u.avatar || '👤';
-      if (cardNickname) cardNickname.textContent = escapeHtml(u.nickname || '未设置昵称');
+      setAvatarEl(cardAvatar, u && u.avatar);
+      if (cardNickname) cardNickname.textContent = u.nickname || '未设置昵称';
       if (cardBio) {
         cardBio.textContent = escapeHtml(u.bio || '');
         cardBio.style.display = u.bio ? 'block' : 'none';

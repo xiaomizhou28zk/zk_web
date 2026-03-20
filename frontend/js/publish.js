@@ -1,4 +1,8 @@
 (function () {
+  if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
+    location.href = 'index.html?needLogin=1';
+    return;
+  }
   var form = document.getElementById('publish-form');
   var titleInput = document.getElementById('publish-title');
   var summaryInput = document.getElementById('publish-summary');

@@ -9,9 +9,17 @@ package wire
 import (
 	"github.com/go-kratos/kratos/v2"
 	"github.com/xiaomizhou28zk/zk_web/internal/app_entrance/server/http"
+	article2 "github.com/xiaomizhou28zk/zk_web/internal/application/article"
+	"github.com/xiaomizhou28zk/zk_web/internal/application/auth"
+	comment2 "github.com/xiaomizhou28zk/zk_web/internal/application/comment"
+	"github.com/xiaomizhou28zk/zk_web/internal/application/rank"
 	user2 "github.com/xiaomizhou28zk/zk_web/internal/application/user"
 	"github.com/xiaomizhou28zk/zk_web/internal/clients"
 	"github.com/xiaomizhou28zk/zk_web/internal/config"
+	"github.com/xiaomizhou28zk/zk_web/internal/repository/article"
+	storage2 "github.com/xiaomizhou28zk/zk_web/internal/repository/article/storage"
+	"github.com/xiaomizhou28zk/zk_web/internal/repository/comment"
+	storage3 "github.com/xiaomizhou28zk/zk_web/internal/repository/comment/storage"
 	"github.com/xiaomizhou28zk/zk_web/internal/repository/user"
 	"github.com/xiaomizhou28zk/zk_web/internal/repository/user/storage"
 )
@@ -28,8 +36,19 @@ func WireServer() (*kratos.App, func(), error) {
 	userMysqlStorage := storage.NewUserMysqlStorage(blogMysqlClient)
 	repository := user.NewRepository(userMysqlStorage)
 	userService := user2.NewUserService(repository)
-	register := http.NewRegister(userService)
-	server := http.NewServer(register)
+	configAuth := config.GetAuthConfig()
+	manager := NewAuthManager(configAuth)
+	service := auth.NewService(repository, manager)
+	articleMysqlStorage := storage2.NewArticleMysqlStorage(blogMysqlClient)
+	articleRepository := article.NewRepository(articleMysqlStorage)
+	rankService := rank.NewService(articleRepository)
+	commentMysqlStorage := storage3.NewCommentMysqlStorage(blogMysqlClient)
+	replyMysqlStorage := storage3.NewReplyMysqlStorage(blogMysqlClient)
+	commentRepository := comment.NewRepository(commentMysqlStorage, replyMysqlStorage)
+	commentService := comment2.NewService(commentRepository, articleRepository, repository)
+	articleService := article2.NewService(articleRepository, repository)
+	register := http.NewRegister(userService, service, rankService, commentService, articleService)
+	server := http.NewServer(register, manager)
 	app := newServer(server)
 	return app, func() {
 		cleanup()

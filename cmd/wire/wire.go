@@ -14,7 +14,7 @@ func WireServer() (*kratos.App, func(), error) {
 		ConfigProviderSet,
 		BaseClientProviderSet,
 		RepositoryProviderSet,
-		// DomainServiceProviderSet,
+		DomainServiceProviderSet,
 		APPServiceProviderSet,
 		ServerProviderSet,
 		newServer,

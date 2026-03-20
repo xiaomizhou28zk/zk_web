@@ -14,11 +14,24 @@ import (
 
 // Config 配置结构体（与之前保持一致）
 type Config struct {
-	Mysql Mysql `yaml:"mysql"`
+	Mysql    Mysql    `yaml:"mysql"`
+	Auth     Auth     `yaml:"auth"`
+	Featured Featured `yaml:"featured"`
 }
 
 type Mysql struct {
 	Blog xmysql.Config `yaml:"blog"`
+}
+
+// Featured 推荐精选配置
+type Featured struct {
+	ArticleIDs []int64 `yaml:"article_ids"` // 精选文章 ID 列表，如 [91,92,...,100]
+}
+
+// Auth 鉴权相关配置
+type Auth struct {
+	JWTSecret    string `yaml:"jwt_secret"`    // JWT 签名密钥
+	TokenVersion string `yaml:"token_version"` // Token 载体版本号，默认 "1"
 }
 
 // 全局配置实例（通过指针原子更新）
