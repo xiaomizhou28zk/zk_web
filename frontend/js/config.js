@@ -9,5 +9,5 @@
       return;
     }
   } catch (_) {}
-  window.BLOG_API_BASE = 'http://127.0.0.1:30080';
+  window.BLOG_API_BASE = 'http://127.0.0.1:8080';
 })();

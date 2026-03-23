@@ -81,7 +81,7 @@ func publicBaseURL(r *nethttp.Request) string {
 	}
 	host := r.Host
 	if host == "" {
-		host = "127.0.0.1:30080"
+		host = "127.0.0.1:8080"
 	}
 	return proto + "://" + host
 }
@@ -104,7 +104,7 @@ func saveUploadedFile(w nethttp.ResponseWriter, r *nethttp.Request, authMgr *dom
 		return false
 	}
 
-	if err := os.MkdirAll(spec.dir, 0755); err != nil {
+	if err := os.MkdirAll(spec.dir, 0o755); err != nil {
 		_ = WriteEnvelopeJSON(w, 500, "创建目录失败", nil)
 		return false
 	}
@@ -178,8 +178,8 @@ func registerStaticPathMisunderstandingRedirects(srv *kratosHttp.Server) {
 // RegisterUploadRoutesAndStatic 注册：GET /static/... ；POST 封面上传、正文视频上传。
 func RegisterUploadRoutesAndStatic(srv *kratosHttp.Server, authMgr *domainAuth.Manager) {
 	staticRoot := articleStaticsRoot()
-	_ = os.MkdirAll(articleCoverUploadDir(), 0755)
-	_ = os.MkdirAll(articleVideoUploadDir(), 0755)
+	_ = os.MkdirAll(articleCoverUploadDir(), 0o755)
+	_ = os.MkdirAll(articleVideoUploadDir(), 0o755)
 
 	registerStaticPathMisunderstandingRedirects(srv)
 

@@ -30,7 +30,7 @@ func corsFilter(next nethttp.Handler) nethttp.Handler {
 
 func NewServer(register Register, tokenManager *domainAuth.Manager) *kratosHttp.Server {
 	srv := kratosHttp.NewServer(
-		kratosHttp.Address(":30080"),
+		kratosHttp.Address(":8080"),
 		kratosHttp.Timeout(2*time.Minute), // 避免 DB 查询或调试断点停留时 context deadline exceeded
 		kratosHttp.Filter(corsFilter),
 		kratosHttp.Middleware(JWTAuthMiddleware(tokenManager)),
