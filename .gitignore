@@ -8,3 +8,8 @@
 *.jpg
 *.png
 *.jpeg
+
+# 本地 TLS 私钥与证书（勿提交）
+configs/certs/*.key
+configs/certs/*.crt
+configs/certs/*.pem

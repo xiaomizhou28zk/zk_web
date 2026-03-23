@@ -17,6 +17,21 @@ type Config struct {
 	Mysql    Mysql    `yaml:"mysql"`
 	Auth     Auth     `yaml:"auth"`
 	Featured Featured `yaml:"featured"`
+	Server   Server   `yaml:"server"`
+}
+
+// Server HTTP/HTTPS 监听（HTTPS 可选，见 HTTPS.Enabled）
+type Server struct {
+	HTTPAddr string    `yaml:"http_addr"` // 如 :30080，空则默认 :30080
+	HTTPS    *HTTPSTLS `yaml:"https"`
+}
+
+// HTTPSTLS 启用后会在 Addr 上监听 TLS（如 :8443），需有效 cert/key 文件
+type HTTPSTLS struct {
+	Enabled  bool   `yaml:"enabled"`
+	Addr     string `yaml:"addr"`      // 如 :8443，空则默认 :8443
+	CertFile string `yaml:"cert_file"` // PEM 证书
+	KeyFile  string `yaml:"key_file"`  // PEM 私钥
 }
 
 type Mysql struct {
@@ -63,6 +78,26 @@ func Get() *Config {
 	rwMu.RLock()
 	defer rwMu.RUnlock()
 	return globalConfig // 返回指针的副本（安全，因为结构体字段不会被直接修改）
+}
+
+// GetServerConfig 供 Wire 注入；带默认值，避免 yaml 未写 server 段时行为异常
+func GetServerConfig() Server {
+	c := Get()
+	if c == nil {
+		return defaultServerConfig()
+	}
+	s := c.Server
+	if s.HTTPAddr == "" {
+		s.HTTPAddr = ":8080"
+	}
+	if s.HTTPS != nil && s.HTTPS.Enabled && s.HTTPS.Addr == "" {
+		s.HTTPS.Addr = ":8443"
+	}
+	return s
+}
+
+func defaultServerConfig() Server {
+	return Server{HTTPAddr: ":8080"}
 }
 
 // parseConfig 解析 YAML 配置文件

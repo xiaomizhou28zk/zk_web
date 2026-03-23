@@ -1,3 +1,13 @@
+# HTTP 明文端口；HTTPS 见 server.https（需证书，可用 scripts/gen-dev-cert.sh 生成本地自签名）
+server:
+  http_addr: ":8080"
+  https:
+    # 为 true 且证书存在时监听 :8443；缺证书时仅打日志并只起 HTTP（见 configs/certs/README.md）
+    enabled: true
+    addr: ":8443"
+    cert_file: "configs/certs/server.crt"
+    key_file: "configs/certs/server.key"
+
 # 推荐精选：从配置读取文章 ID，接口按此顺序查表返回
 featured:
   article_ids: [102, 91, 92, 93, 94, 95, 96, 97, 98, 99]

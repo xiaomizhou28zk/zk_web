@@ -24,8 +24,8 @@ COPY --from=builder /app/server /app/
 # 复制所有其他文件（包括证书等）
 COPY --from=builder /app/ /app/
 
-# 暴露端口
-EXPOSE 8080 8443
+# 与 configs 中 server.http_addr / server.https.addr 一致（默认 30080 + 8443）
+EXPOSE 30080 8443
 
 # 运行程序
 CMD ["/app/server"]

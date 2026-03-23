@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/go-kratos/kratos/v2"
-	kratosHttp "github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/google/wire"
 	"github.com/xiaomizhou28zk/zk_web/internal/app_entrance/server/http"
 	articleApp "github.com/xiaomizhou28zk/zk_web/internal/application/article"
@@ -34,6 +34,7 @@ var (
 var ConfigProviderSet = wire.NewSet(
 	config.GetBlogMysqlConfig,
 	config.GetAuthConfig,
+	config.GetServerConfig,
 )
 
 var BaseClientProviderSet = wire.NewSet(
@@ -77,18 +78,20 @@ var APPServiceProviderSet = wire.NewSet(
 )
 
 var ServerProviderSet = wire.NewSet(
-	http.NewServer,
+	http.NewServerPair,
 	http.NewRegister,
 )
 
-func newServer(hs *kratosHttp.Server) *kratos.App {
+func newServer(pair *http.ServerPair) *kratos.App {
+	servers := []transport.Server{pair.HTTP}
+	if pair.HTTPS != nil {
+		servers = append(servers, pair.HTTPS)
+	}
 	return kratos.New(
 		kratos.ID(id),
 		kratos.Name(Name),
 		kratos.Version(Version),
 		kratos.Metadata(map[string]string{}),
-		kratos.Server(
-			hs,
-		),
+		kratos.Server(servers...),
 	)
 }

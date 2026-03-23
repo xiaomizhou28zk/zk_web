@@ -48,8 +48,13 @@ func WireServer() (*kratos.App, func(), error) {
 	commentService := comment2.NewService(commentRepository, articleRepository, repository)
 	articleService := article2.NewService(articleRepository, repository)
 	register := http.NewRegister(userService, service, rankService, commentService, articleService, manager)
-	server := http.NewServer(register, manager)
-	app := newServer(server)
+	server := config.GetServerConfig()
+	serverPair, err := http.NewServerPair(register, manager, server)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	app := newServer(serverPair)
 	return app, func() {
 		cleanup()
 	}, nil
