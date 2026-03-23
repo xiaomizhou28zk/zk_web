@@ -615,10 +615,12 @@
     var inner = document.createElement('span');
     inner.className = 'ql-blog-video-btn-inner';
     inner.appendChild(createBlogVideoToolbarIcon(iconKind));
-    var lab = document.createElement('span');
-    lab.className = 'ql-blog-video-btn-label';
-    lab.textContent = label;
-    inner.appendChild(lab);
+    if (label) {
+      var lab = document.createElement('span');
+      lab.className = 'ql-blog-video-btn-label';
+      lab.textContent = label;
+      inner.appendChild(lab);
+    }
     el.appendChild(inner);
     return el;
   }
@@ -635,22 +637,33 @@
 
   function attachEditorVideoToolbar(toolbarEl, quillRef) {
     var span = document.createElement('span');
-    span.className = 'ql-formats ql-formats-blog-video';
+    /* 不用再加 ql-formats：插在「清除格式」button.ql-clean 同一组里，紧跟其后 */
+    span.className = 'ql-formats-blog-video';
     var btnUrl = makeToolbarActionEl(
       'ql-blog-video-url',
       '插入视频链接（YouTube、bilibili、mp4 直链等）',
-      '视频链接',
+      '',
       'link'
     );
     var btnUp = makeToolbarActionEl(
       'ql-blog-video-upload',
       '上传本地视频（mp4 / webm / mov）',
-      '上传视频',
+      '',
       'upload'
     );
     span.appendChild(btnUrl);
     span.appendChild(btnUp);
-    toolbarEl.appendChild(span);
+    var cleanBtn = toolbarEl.querySelector('button.ql-clean');
+    if (cleanBtn && cleanBtn.parentNode) {
+      var host = cleanBtn.parentNode;
+      if (cleanBtn.nextSibling) {
+        host.insertBefore(span, cleanBtn.nextSibling);
+      } else {
+        host.appendChild(span);
+      }
+    } else {
+      toolbarEl.appendChild(span);
+    }
 
     onPrimaryActivate(btnUrl, function () {
       videoUrlModal.open(quillRef);

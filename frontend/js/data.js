@@ -327,6 +327,12 @@ function setStoredComments(data) {
 var _currentUser = null;
 var BLOG_USER_KEY = 'blog_user';
 
+/* 首屏同步恢复，避免顶栏先「未登录」再闪成已登录（getCurrentUser 在 fetchUserInfo 完成前即可正确） */
+try {
+  var _blogUserRaw = localStorage.getItem(BLOG_USER_KEY);
+  if (_blogUserRaw) _currentUser = JSON.parse(_blogUserRaw);
+} catch (_hydrateErr) {}
+
 function fetchUserInfo() {
   return new Promise(function (resolve) {
     try {

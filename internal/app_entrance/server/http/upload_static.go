@@ -16,6 +16,29 @@ import (
 	domainAuth "github.com/xiaomizhou28zk/zk_web/internal/domain/auth"
 )
 
+// noDirListingFS 包装 http.Dir：拒绝打开目录，从而禁用 net/http.FileServer 的目录列表；
+// 仅允许直接访问具体文件（如 /static/images/xxx.jpg）。目录 URL 返回 403。
+type noDirListingFS struct {
+	root nethttp.Dir
+}
+
+func (fs noDirListingFS) Open(name string) (nethttp.File, error) {
+	f, err := fs.root.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	st, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	if st.IsDir() {
+		f.Close()
+		return nil, os.ErrPermission
+	}
+	return f, nil
+}
+
 func articleStaticsRoot() string {
 	return filepath.Join("frontend", "statics")
 }
@@ -26,6 +49,21 @@ func articleCoverUploadDir() string {
 
 func articleVideoUploadDir() string {
 	return filepath.Join(articleStaticsRoot(), "videos")
+}
+
+func frontendSiteRoot() string {
+	return filepath.Join("frontend")
+}
+
+// RegisterFrontendSite 开放多页前端（HTML/CSS/JS）。须在 /static/、/api/* 等更具体路由注册之后再调用，
+// 以便由专用路由优先匹配；根路径 / 会解析为 frontend/index.html。
+//
+// 注意：此处不能使用 noDirListingFS。访问 / 时 FileServer 必须先打开站点根目录才能查找 index.html；
+// 若一律禁止打开目录，根路径会固定返回 403。
+func RegisterFrontendSite(srv *kratosHttp.Server) {
+	root := frontendSiteRoot()
+	fs := nethttp.FileServer(nethttp.Dir(root))
+	srv.HandlePrefix("/", fs)
 }
 
 func randomHex(nBytes int) string {
@@ -118,13 +156,35 @@ func saveUploadedFile(w nethttp.ResponseWriter, r *nethttp.Request, authMgr *dom
 	return true
 }
 
+// registerStaticPathMisunderstandingRedirects 将易混淆的 URL 指到真正的前端首页。
+// 说明：本项目中 /static/ 表示「上传文件根目录」frontend/statics（images、videos），
+// 不是一般意义上的「整站静态资源前缀」；直接访问 /static/ 会落到目录，noDirListingFS 会 403。
+func registerStaticPathMisunderstandingRedirects(srv *kratosHttp.Server) {
+	redirect := func(target string) nethttp.HandlerFunc {
+		return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+			if r.Method != nethttp.MethodGet && r.Method != nethttp.MethodHead {
+				w.WriteHeader(nethttp.StatusMethodNotAllowed)
+				return
+			}
+			nethttp.Redirect(w, r, target, nethttp.StatusFound)
+		}
+	}
+	// 须在 PathPrefix("/static/") 之前注册，精确路径优先匹配
+	srv.HandleFunc("/static/index.html", redirect("/index.html"))
+	srv.HandleFunc("/static/", redirect("/"))
+	srv.HandleFunc("/static", redirect("/"))
+}
+
 // RegisterUploadRoutesAndStatic 注册：GET /static/... ；POST 封面上传、正文视频上传。
 func RegisterUploadRoutesAndStatic(srv *kratosHttp.Server, authMgr *domainAuth.Manager) {
 	staticRoot := articleStaticsRoot()
 	_ = os.MkdirAll(articleCoverUploadDir(), 0755)
 	_ = os.MkdirAll(articleVideoUploadDir(), 0755)
 
-	srv.HandlePrefix("/static/", nethttp.StripPrefix("/static/", nethttp.FileServer(nethttp.Dir(staticRoot))))
+	registerStaticPathMisunderstandingRedirects(srv)
+
+	staticHandler := nethttp.FileServer(noDirListingFS{root: nethttp.Dir(staticRoot)})
+	srv.HandlePrefix("/static/", nethttp.StripPrefix("/static/", staticHandler))
 
 	srv.HandleFunc("/api/upload/cover", func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		if r.Method != nethttp.MethodPost {

@@ -1,6 +1,5 @@
 (function () {
   var el = document.getElementById('header-user');
-  if (!el) return;
 
   function escapeHtml(s) {
     var div = document.createElement('div');
@@ -8,20 +7,68 @@
     return div.innerHTML;
   }
 
-  /** 头像：http(s) 图片地址用 img，否则按 emoji/文本展示 */
+  function isAvatarImageUrl(avatar) {
+    var a = avatar != null ? String(avatar).trim() : '';
+    return /^https?:\/\/.+/i.test(a);
+  }
+
+  /** 头像：http(s) 图片地址用 img，否则按 emoji/文本展示（顶栏不用 lazy，避免晚一拍才出现） */
   function avatarHtml(avatar) {
     var a = avatar != null ? String(avatar).trim() : '';
     if (!a) a = '👤';
     if (/^https?:\/\/.+/i.test(a)) {
       var src = a.replace(/"/g, '&quot;');
-      return '<img class="user-avatar-img" src="' + src + '" alt="" referrerpolicy="no-referrer" loading="lazy" />';
+      return (
+        '<img class="user-avatar-img" src="' +
+        src +
+        '" alt="" referrerpolicy="no-referrer" loading="eager" decoding="async" />'
+      );
     }
     return escapeHtml(a);
   }
 
+  /** 用于判断顶栏展示是否需整段替换（相同则跳过重绘，避免头像 img 反复卸载/重载闪烁） */
+  var lastUserHeaderFingerprint = '';
+
+  function userHeaderFingerprint(u) {
+    if (!u) return '\0guest';
+    var id = u.id != null ? String(u.id) : '';
+    return [id, u.nickname || '', String(u.avatar || ''), u.bio || ''].join('\0');
+  }
+
+  function wireHeaderAvatarImages(root) {
+    if (!root) return;
+    var imgs = root.querySelectorAll('.user-avatar-img');
+    imgs.forEach(function (img) {
+      img.classList.remove('is-loaded');
+      if (img.complete && img.naturalWidth > 0) {
+        img.classList.add('is-loaded');
+      } else {
+        img.addEventListener('load', function onLoad() {
+          img.removeEventListener('load', onLoad);
+          img.classList.add('is-loaded');
+        });
+        img.addEventListener('error', function onErr() {
+          img.removeEventListener('error', onErr);
+          img.classList.add('is-loaded');
+        });
+      }
+    });
+  }
+
+  /** @returns {boolean} 是否执行了 DOM 更新（为 true 时需 bindPopoverAndAuth） */
   function renderTrigger(u) {
+    if (!el) return false;
+    var fp = userHeaderFingerprint(u);
+    if (fp === lastUserHeaderFingerprint && el.querySelector('.header-user-trigger')) {
+      return false;
+    }
+    lastUserHeaderFingerprint = fp;
+
     var rawAvatar = u ? (u.avatar || '👤') : '👤';
     var avatarInner = avatarHtml(rawAvatar);
+    var avatarPhotoClass = isAvatarImageUrl(rawAvatar) ? ' header-user-avatar--photo' : '';
+    var popoverPhotoClass = isAvatarImageUrl(rawAvatar) ? ' popover-avatar--photo' : '';
     var nick = u && u.nickname ? escapeHtml(u.nickname) : '未登录';
     var bio = u && u.bio ? escapeHtml(u.bio) : '';
     var actions =
@@ -36,17 +83,19 @@
     }
     el.innerHTML =
       '<button type="button" class="header-user-trigger" aria-expanded="false" aria-haspopup="true" aria-controls="header-user-popover">' +
-      '<span class="header-user-avatar">' + avatarInner + '</span>' +
+      '<span class="header-user-avatar' + avatarPhotoClass + '">' + avatarInner + '</span>' +
       '<span class="header-user-nickname">' + nick + '</span>' +
       '</button>' +
       '<div class="header-user-popover" id="header-user-popover" role="dialog" aria-label="用户菜单" hidden>' +
       '<div class="popover-user">' +
-      '<span class="popover-avatar" id="popover-avatar">' + avatarInner + '</span>' +
+      '<span class="popover-avatar' + popoverPhotoClass + '" id="popover-avatar">' + avatarInner + '</span>' +
       '<span class="popover-nickname" id="popover-nickname">' + nick + '</span>' +
       '<p class="popover-bio" id="popover-bio">' + bio + '</p>' +
       '</div>' +
       '<div class="popover-actions">' + actions + '</div>' +
       '</div>';
+    wireHeaderAvatarImages(el);
+    return true;
   }
 
   function ensureAuthModal() {
@@ -142,18 +191,18 @@
   }
 
   function refreshHeader() {
+    if (!el) return;
     var u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
     if (u) {
-      renderTrigger(u);
-      bindPopoverAndAuth();
+      if (renderTrigger(u)) bindPopoverAndAuth();
     }
     fetchUserInfo().then(function (u2) {
-      renderTrigger(u2 || u);
-      bindPopoverAndAuth();
+      if (renderTrigger(u2 || u)) bindPopoverAndAuth();
     });
   }
 
   function bindPopoverAndAuth() {
+    if (!el) return;
     var trigger = el.querySelector('.header-user-trigger');
     var popover = document.getElementById('header-user-popover');
     if (!popover) return;
@@ -206,7 +255,10 @@
       profileLink.addEventListener('click', function (e) {
         if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
           e.preventDefault();
-          location.href = 'index.html?needLogin=1';
+          close();
+          if (typeof window.blogTryOpenLogin === 'function') window.blogTryOpenLogin();
+          else if (typeof window.openBlogLogin === 'function') window.openBlogLogin();
+          else window.dispatchEvent(new CustomEvent('blog:openLogin'));
         }
       });
     }
@@ -214,7 +266,10 @@
       myArticlesLink.addEventListener('click', function (e) {
         if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
           e.preventDefault();
-          location.href = 'index.html?needLogin=1';
+          close();
+          if (typeof window.blogTryOpenLogin === 'function') window.blogTryOpenLogin();
+          else if (typeof window.openBlogLogin === 'function') window.openBlogLogin();
+          else window.dispatchEvent(new CustomEvent('blog:openLogin'));
         }
       });
     }
@@ -223,15 +278,21 @@
       myFavLink.addEventListener('click', function (e) {
         if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
           e.preventDefault();
-          location.href = 'index.html?needLogin=1';
+          close();
+          if (typeof window.blogTryOpenLogin === 'function') window.blogTryOpenLogin();
+          else if (typeof window.openBlogLogin === 'function') window.openBlogLogin();
+          else window.dispatchEvent(new CustomEvent('blog:openLogin'));
         }
       });
     }
   }
 
+  var authModalEventsBound = false;
+
   function bindAuthModal() {
     var modal = document.getElementById('auth-modal');
-    if (!modal) return;
+    if (!modal || authModalEventsBound) return;
+    authModalEventsBound = true;
     var backdrop = document.getElementById('auth-modal-backdrop');
     var closeBtn = modal.querySelector('.auth-modal-close');
     var loginForm = document.getElementById('auth-login-form');
@@ -275,6 +336,7 @@
             setCurrentUser(d.user || { nickname: account.indexOf('@') !== -1 ? account.split('@')[0] : account, avatar: '👤', bio: '' });
             closeModal();
             refreshHeader();
+            window.dispatchEvent(new CustomEvent('blog:loginSuccess'));
           }).catch(function (err) {
             msgEl.textContent = (err && err.message) || '登录失败';
             msgEl.className = 'auth-msg auth-msg-error';
@@ -283,6 +345,7 @@
           setCurrentUser({ nickname: account.indexOf('@') !== -1 ? account.split('@')[0] : account, avatar: '👤', bio: '' });
           closeModal();
           refreshHeader();
+          window.dispatchEvent(new CustomEvent('blog:loginSuccess'));
         }
       });
     }
@@ -323,6 +386,7 @@
             setCurrentUser(d.user || { nickname: nickname, avatar: '👤', bio: '' });
             closeModal();
             refreshHeader();
+            window.dispatchEvent(new CustomEvent('blog:loginSuccess'));
           }).catch(function (err) {
             msgEl.textContent = (err && err.message) || '注册失败';
             msgEl.className = 'auth-msg auth-msg-error';
@@ -331,52 +395,50 @@
           setCurrentUser({ nickname: nickname, avatar: '👤', bio: '' });
           closeModal();
           refreshHeader();
+          window.dispatchEvent(new CustomEvent('blog:loginSuccess'));
         }
       });
     }
   }
 
-  (function bindPublishLink() {
-    var publishLink = document.querySelector('.nav-add-dropdown a[href="publish.html"]');
-    if (publishLink) {
-      publishLink.addEventListener('click', function (e) {
-        if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
-          e.preventDefault();
-          location.href = 'index.html?needLogin=1';
-        }
-      });
-    }
-  })();
-
-  window.addEventListener('blog:openLogin', function () {
+  /** 打开登录弹窗（同步打开，避免 rAF/setTimeout 在部分环境下不触发导致「看起来没反应」） */
+  function openBlogLoginModal() {
     ensureAuthModal();
+    bindAuthModal();
     openAuthModal('login');
+  }
+  window.openBlogLogin = openBlogLoginModal;
+  window.addEventListener('blog:openLogin', function () {
+    openBlogLoginModal();
   });
+
+  /* 写文章 publish.html：由 api.js 全局捕获统一拦跳转并弹登录窗（含过期 token） */
 
   window.addEventListener('blog:refreshHeader', function () {
     refreshHeader();
   });
 
-  el.textContent = '加载中…';
+  /* 尽早挂载登录弹窗；与 #header-user 无关，避免无顶栏页面无法弹窗 */
+  ensureAuthModal();
+  bindAuthModal();
+
+  if (!el) return;
+
+  /* 首屏直接渲染与最终接近的顶栏宽度，避免「空 → 加载中… → 按钮」两次变宽把中间搜索区挤偏 */
+  var uInitial = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+  if (renderTrigger(uInitial)) bindPopoverAndAuth();
+
   fetchUserInfo()
     .then(function (u) {
-      renderTrigger(u);
-      bindPopoverAndAuth();
-      ensureAuthModal();
-      bindAuthModal();
+      if (renderTrigger(u)) bindPopoverAndAuth();
       if (typeof location !== 'undefined' && location.search && location.search.indexOf('needLogin=1') !== -1) {
         openAuthModal('login');
       }
     })
     .catch(function () {
-      renderTrigger(null);
-      bindPopoverAndAuth();
-      ensureAuthModal();
-      bindAuthModal();
+      if (renderTrigger(null)) bindPopoverAndAuth();
       if (typeof location !== 'undefined' && location.search && location.search.indexOf('needLogin=1') !== -1) {
         openAuthModal('login');
-      } else {
-        el.textContent = '加载失败';
       }
     });
 })();

@@ -15,6 +15,31 @@
   const commentContentEl = document.getElementById('comment-content');
   const commentSubmitEl = document.getElementById('comment-submit');
 
+  function openArticleLogin() {
+    if (typeof window.blogTryOpenLogin === 'function') window.blogTryOpenLogin();
+    else window.dispatchEvent(new CustomEvent('blog:openLogin'));
+  }
+
+  function hasArticleAuthToken() {
+    try {
+      return !!(window.BlogAPI && window.BlogAPI.getToken && String(window.BlogAPI.getToken() || '').trim());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /** 后端业务错误码/文案：未登录、鉴权失败时弹登录 */
+  function isArticleAuthBizError(err) {
+    if (!err) return false;
+    var c = Number(err.code);
+    if (c === 401 || c === 403) return true;
+    var m = String(err.message || '');
+    if (/请先登录|登录已失效|重新登录|未登录|鉴权|UNAUTHORIZED|用户不存在|已禁用|token|失效/i.test(m)) return true;
+    /* kratos 等可能把 Reason 放在 name */
+    var n = String(err.name || '');
+    return /Unauthorized|unauthorized/i.test(n);
+  }
+
   /** 单行起高，换行/删行时随内容变化（不依赖 field-sizing 的旧浏览器也一致） */
   function adjustTextareaHeight(el) {
     if (!el || el.tagName !== 'TEXTAREA') return;
@@ -162,6 +187,10 @@
 
     commentListEl.querySelectorAll('.tap-to-reply').forEach(function (el) {
       el.addEventListener('click', function () {
+        if (!hasArticleAuthToken()) {
+          openArticleLogin();
+          return;
+        }
         var container = el.closest('.reply-item') || el.closest('.comment-item');
         var wrap = container && container.querySelector(':scope > .reply-form-wrap');
         if (!wrap) return;
@@ -184,8 +213,8 @@
 
     commentListEl.querySelectorAll('.reply-submit').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
-          window.dispatchEvent(new CustomEvent('blog:openLogin'));
+        if (!hasArticleAuthToken()) {
+          openArticleLogin();
           return;
         }
         var formWrap = btn.closest('.reply-form-wrap');
@@ -193,7 +222,10 @@
         var contentInput = formWrap && formWrap.querySelector('.reply-content');
         if (!contentInput || !container) return;
         var u = getCurrentUser();
-        if (!u || !(u.nickname || '').trim()) return;
+        if (!u || !(u.nickname || '').trim()) {
+          openArticleLogin();
+          return;
+        }
         var commentId = container.getAttribute('data-comment-id');
         var replyItem = formWrap.closest('.reply-item');
         var parentReplyId = replyItem ? (replyItem.getAttribute('data-reply-id') || undefined) : undefined;
@@ -263,11 +295,20 @@
       '</button>' +
       '</div>' +
       '</div>';
+  }
 
-    engagementEl.querySelectorAll('.engagement-chip').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
-          window.dispatchEvent(new CustomEvent('blog:openLogin'));
+  /* 事件委托（捕获）：点 SVG/数字等子元素也命中，避免部分环境下未触发 button 点击 */
+  if (engagementEl && !engagementEl.dataset.blogEngagementBound) {
+    engagementEl.dataset.blogEngagementBound = '1';
+    engagementEl.addEventListener(
+      'click',
+      function (ev) {
+        var btn = ev.target.closest && ev.target.closest('.engagement-chip');
+        if (!btn || !engagementEl.contains(btn)) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!hasArticleAuthToken()) {
+          openArticleLogin();
           return;
         }
         var act = btn.getAttribute('data-action');
@@ -281,7 +322,9 @@
               var c = engagementEl.querySelector('.like-count');
               if (c != null && lc != null) c.textContent = String(lc);
             })
-            .catch(function () {});
+            .catch(function (err) {
+              if (isArticleAuthBizError(err)) openArticleLogin();
+            });
         } else if (act === 'favorite' && typeof window.BlogAPI.toggleArticleFavorite === 'function') {
           window.BlogAPI.toggleArticleFavorite(id)
             .then(function (d) {
@@ -292,10 +335,13 @@
               var c = engagementEl.querySelector('.fav-count');
               if (c != null && fc != null) c.textContent = String(fc);
             })
-            .catch(function () {});
+            .catch(function (err) {
+              if (isArticleAuthBizError(err)) openArticleLogin();
+            });
         }
-      });
-    });
+      },
+      true
+    );
   }
 
   function loadComments() {
@@ -309,13 +355,35 @@
   function updateCommentIdentity() {
     if (!commentIdentityEl) return;
     var u = getCurrentUser();
-    if (!u) return;
-    var nick = (u.nickname || '').trim();
-    commentIdentityEl.innerHTML = nick ? '以 <strong>' + (avatarHtml(u.avatar) || '') + (u.avatar ? ' ' : '') + escapeHtml(nick) + '</strong> 身份评论' : '加载中…';
+    var nick = u ? (u.nickname || '').trim() : '';
+    if (!u || !nick) {
+      commentIdentityEl.innerHTML =
+        '未登录：可浏览全文与评论；点赞、收藏、发表评论请先 <a href="javascript:void(0)" class="comment-login-hint">登录</a>。';
+      var loginHint = commentIdentityEl.querySelector('.comment-login-hint');
+      if (loginHint) {
+        loginHint.addEventListener('click', function (e) {
+          e.preventDefault();
+          openArticleLogin();
+        });
+      }
+      commentIdentityEl.className = 'comment-identity comment-identity--guest';
+      return;
+    }
     commentIdentityEl.className = 'comment-identity';
+    commentIdentityEl.innerHTML =
+      '以 <strong>' +
+      (avatarHtml(u.avatar) || '') +
+      (u.avatar ? ' ' : '') +
+      escapeHtml(nick) +
+      '</strong> 身份评论';
   }
 
   fetchUserInfo().then(updateCommentIdentity);
+  window.addEventListener('blog:refreshHeader', function () {
+    if (typeof fetchUserInfo === 'function') {
+      fetchUserInfo().then(updateCommentIdentity);
+    }
+  });
 
   (typeof getArticle === 'function' ? getArticle(id) : Promise.resolve(null))
     .then(function (result) {
@@ -349,12 +417,15 @@
 
   if (commentSubmitEl && commentContentEl) {
     commentSubmitEl.addEventListener('click', function () {
-      if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
-        window.dispatchEvent(new CustomEvent('blog:openLogin'));
+      if (!hasArticleAuthToken()) {
+        openArticleLogin();
         return;
       }
       var u = getCurrentUser();
-      if (!u || !(u.nickname || '').trim()) return;
+      if (!u || !(u.nickname || '').trim()) {
+        openArticleLogin();
+        return;
+      }
       var content = commentContentEl.value.trim();
       if (!content) return;
       if (typeof addComment !== 'function') return;

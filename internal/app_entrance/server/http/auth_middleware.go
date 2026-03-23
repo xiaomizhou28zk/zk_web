@@ -18,6 +18,17 @@ var jwtRelaxedPaths = map[string]struct{}{
 	"/api/auth/logout":   {},
 }
 
+// jwtOptionalAuthPaths：带了无效/过期 JWT 时视为未登录继续请求（不写 UserContext），用于首页/详情/榜单/评论列表等公开只读接口，
+// 避免浏览器里残留旧 token 导致整站 401；写操作仍由业务层校验登录态。
+var jwtOptionalAuthPaths = map[string]struct{}{
+	"/api/articles":           {}, // GET 列表
+	"/api/articles/featured":  {},
+	"/api/articles/detail":    {},
+	"/api/articles/ranking":   {},
+	"/api/articles/comments":  {}, // GET 评论列表；POST 无有效 token 时由 Comment 服务返回未登录
+	"/api/user/me":            {}, // 未登录或 token 失效时返回空用户，便于前端展示访客态
+}
+
 func pathWithoutQuery(path string) string {
 	if i := strings.Index(path, "?"); i >= 0 {
 		return path[:i]
@@ -26,7 +37,8 @@ func pathWithoutQuery(path string) string {
 }
 
 // JWTAuthMiddleware 校验并解析 Bearer JWT，成功则 WriteUserContextInfo；无 token 则直接放行。
-// 除登录/注册/登出外，若带了 token 但校验失败则返回 401。
+// 若带了 token 但校验失败：登录/注册/登出路径仍放行；jwtOptionalAuthPaths 上的路径按未登录继续（便于公开读接口）；
+// 其余路径返回 401。
 func JWTAuthMiddleware(m *domainAuth.Manager) middleware.Middleware {
 	return func(next middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -42,6 +54,13 @@ func JWTAuthMiddleware(m *domainAuth.Manager) middleware.Middleware {
 			if err != nil {
 				p := pathWithoutQuery(httpReq.URL.Path)
 				if _, relaxed := jwtRelaxedPaths[p]; relaxed {
+					return next(ctx, req)
+				}
+				if _, optional := jwtOptionalAuthPaths[p]; optional {
+					return next(ctx, req)
+				}
+				// 页面、/static/ 等非 API：不因过期 token 整页 401，按访客继续（写接口仍在 /api 内校验）
+				if !strings.HasPrefix(p, "/api/") {
 					return next(ctx, req)
 				}
 				return nil, kerrors.Unauthorized("UNAUTHORIZED", "登录已失效，请重新登录")

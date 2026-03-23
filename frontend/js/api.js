@@ -277,3 +277,97 @@
     },
   };
 })();
+
+/**
+ * 需登录页调用：多次尝试打开登录弹窗（应对脚本时机、残留 token 导致仅依赖 getToken 不准等情况）。
+ * 依赖 header-user 提供的 window.openBlogLogin；未就绪时退回 blog:openLogin 事件。
+ */
+(function () {
+  window.blogTryOpenLogin = function () {
+    function once() {
+      try {
+        if (typeof window.openBlogLogin === 'function') window.openBlogLogin();
+        else window.dispatchEvent(new CustomEvent('blog:openLogin'));
+      } catch (e) {}
+    }
+    once();
+    setTimeout(once, 0);
+    setTimeout(function () {
+      var m = document.getElementById('auth-modal');
+      if (!m || !m.classList.contains('is-open')) once();
+    }, 160);
+  };
+
+  /** 未登录时拦截跳转到需登录页，只弹登录窗（捕获阶段，不依赖各页单独绑事件） */
+  function blogTrimAuthToken() {
+    try {
+      if (!window.BlogAPI || typeof window.BlogAPI.getToken !== 'function') return '';
+      return String(window.BlogAPI.getToken() || '').trim();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  document.addEventListener(
+    'click',
+    function (e) {
+      if (e.defaultPrevented) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var el = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!el) return;
+      var href = String(el.getAttribute('href') || '').trim();
+      if (!href || href.toLowerCase().indexOf('javascript:') === 0) return;
+      var pathOnly = href.split('#')[0].split('?')[0];
+      var file = pathOnly.replace(/^.*\//, '') || pathOnly;
+      if (
+        file !== 'profile.html' &&
+        file !== 'my-articles.html' &&
+        file !== 'my-favorites.html' &&
+        file !== 'publish.html'
+      ) {
+        return;
+      }
+
+      /* 一律先拦住默认跳转，验完登录再决定：避免先进页面再弹窗（含过期 token） */
+      e.preventDefault();
+      e.stopPropagation();
+
+      var targetUrl = el.href;
+
+      if (!blogTrimAuthToken()) {
+        window.blogTryOpenLogin();
+        return;
+      }
+
+      function go() {
+        window.location.href = targetUrl;
+      }
+
+      if (typeof fetchUserInfo === 'function') {
+        fetchUserInfo()
+          .then(function (u) {
+            if (u) go();
+            else window.blogTryOpenLogin();
+          })
+          .catch(function () {
+            window.blogTryOpenLogin();
+          });
+        return;
+      }
+
+      if (window.BlogAPI && typeof window.BlogAPI.getUserMe === 'function') {
+        window.BlogAPI.getUserMe().then(function (d) {
+          var user = d && d.user;
+          if (user) go();
+          else window.blogTryOpenLogin();
+        }).catch(function () {
+          window.blogTryOpenLogin();
+        });
+        return;
+      }
+
+      window.blogTryOpenLogin();
+    },
+    true
+  );
+})();

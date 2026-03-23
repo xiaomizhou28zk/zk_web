@@ -1,9 +1,4 @@
 (function () {
-  if (!window.BlogAPI || !window.BlogAPI.getToken || !window.BlogAPI.getToken()) {
-    location.href = 'index.html?needLogin=1';
-    return;
-  }
-
   var loadingEl = document.getElementById('profile-loading');
   var contentEl = document.getElementById('profile-content');
   var cardAvatar = document.getElementById('card-avatar');
@@ -151,16 +146,29 @@
     return Array.from(s || '').length;
   }
 
-  fetchUserInfo()
-    .then(function (u) {
-      lastUser = u || null;
-      if (loadingEl) loadingEl.style.display = 'none';
-      if (contentEl) contentEl.style.display = 'block';
-      applyUserToCard(u);
-    })
-    .catch(function () {
-      if (loadingEl) loadingEl.textContent = '加载失败，请稍后再试';
+  function trimToken() {
+    try {
+      if (!window.BlogAPI || typeof window.BlogAPI.getToken !== 'function') return '';
+      return String(window.BlogAPI.getToken() || '').trim();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function showGuest() {
+    if (typeof window.blogTryOpenLogin === 'function') window.blogTryOpenLogin();
+    else if (typeof window.openBlogLogin === 'function') window.openBlogLogin();
+    else window.dispatchEvent(new CustomEvent('blog:openLogin'));
+    if (loadingEl) {
+      loadingEl.style.display = 'block';
+      loadingEl.textContent = '请先登录后查看个人信息。';
+    }
+    if (contentEl) contentEl.style.display = 'none';
+    window.addEventListener('blog:loginSuccess', function onLogin() {
+      window.removeEventListener('blog:loginSuccess', onLogin);
+      location.reload();
     });
+  }
 
   if (avatarUploadBtn && avatarFile) {
     avatarUploadBtn.addEventListener('click', function () {
@@ -301,5 +309,26 @@
           if (submitBtn) submitBtn.disabled = false;
         });
     });
+  }
+
+  if (!trimToken()) {
+    showGuest();
+  } else if (typeof fetchUserInfo === 'function') {
+    fetchUserInfo()
+      .then(function (u) {
+        if (!u) {
+          showGuest();
+          return;
+        }
+        lastUser = u || null;
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (contentEl) contentEl.style.display = 'block';
+        applyUserToCard(u);
+      })
+      .catch(function () {
+        if (loadingEl) loadingEl.textContent = '加载失败，请稍后再试';
+      });
+  } else {
+    showGuest();
   }
 })();

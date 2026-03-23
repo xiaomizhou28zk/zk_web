@@ -53,4 +53,5 @@ func (r register) RegisterHTTPServer(srv *kratosHttp.Server) {
 	rankApi.RegisterRankingServiceHTTPServer(srv, r.rankSrv)
 	commentApi.RegisterCommentServiceHTTPServer(srv, r.commentSrv)
 	articleApi.RegisterArticleServiceHTTPServer(srv, r.articleSrv)
+	RegisterFrontendSite(srv)
 }
