@@ -1,6 +1,7 @@
 # 忽略版本控制目录
 .git
 .gitignore
+.gocache/
 
 # 忽略Go模块缓存和依赖目录
 vendor/

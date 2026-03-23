@@ -22,7 +22,7 @@ type Config struct {
 
 // Server HTTP/HTTPS 监听（HTTPS 可选，见 HTTPS.Enabled）
 type Server struct {
-	HTTPAddr string    `yaml:"http_addr"` // 如 :30080，空则默认 :30080
+	HTTPAddr string    `yaml:"http_addr"` // 如 :8080，空则默认 :8080
 	HTTPS    *HTTPSTLS `yaml:"https"`
 }
 

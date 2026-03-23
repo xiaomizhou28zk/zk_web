@@ -13,3 +13,9 @@
 configs/certs/*.key
 configs/certs/*.crt
 configs/certs/*.pem
+
+# 上传目录（封面 / 正文视频），不提交具体文件
+frontend/statics/images/**
+frontend/statics/videos/**
+
+.DS_Store

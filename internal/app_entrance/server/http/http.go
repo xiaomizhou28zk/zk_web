@@ -60,7 +60,7 @@ func NewServerPair(register Register, tokenManager *domainAuth.Manager, sc confi
 	return pair, nil
 }
 
-// newPlainHTTPServer 明文 HTTP（默认 :30080，由配置 server.http_addr 覆盖）
+// newPlainHTTPServer 明文 HTTP（默认 :8080，由配置 server.http_addr 覆盖）
 func newPlainHTTPServer(register Register, tokenManager *domainAuth.Manager, sc config.Server) *kratosHttp.Server {
 	addr := sc.HTTPAddr
 	if addr == "" {
