@@ -81,8 +81,8 @@ api: $(API_PROTO_FILES)
 
 # 启动服务
 run:
-	@echo "Starting Gin web server..."
-	@cd $(ROOT_DIR) && go run main.go server
+	@echo "Starting zk_web (Kratos HTTP)..."
+	@cd $(ROOT_DIR) && go run .
 
 # 清理生成文件
 clean:
