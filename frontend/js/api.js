@@ -4,6 +4,8 @@
 (function () {
   var BASE = typeof window !== 'undefined' && window.BLOG_API_BASE != null ? String(window.BLOG_API_BASE) : '';
   var TOKEN_KEY = 'blog_token';
+  /** 与后端 /api/upload/cover 一致：图片单文件最大 10MB */
+  var MAX_ARTICLE_IMAGE_BYTES = 10 * 1024 * 1024;
 
   function getToken() {
     try {
@@ -250,8 +252,11 @@
       });
     },
 
-    /** 封面上传：multipart，字段名 file；返回 data.url */
+    /** 封面上传：multipart，字段名 file；返回 data.url（图片最大 10MB） */
     uploadArticleCover: function (file) {
+      if (file && typeof file.size === 'number' && file.size > MAX_ARTICLE_IMAGE_BYTES) {
+        return Promise.reject(new Error('图片大小不能超过 10MB'));
+      }
       var url = BASE + '/api/upload/cover';
       var fd = new FormData();
       fd.append('file', file);

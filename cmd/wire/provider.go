@@ -83,7 +83,10 @@ var ServerProviderSet = wire.NewSet(
 )
 
 func newServer(pair *http.ServerPair) *kratos.App {
-	servers := []transport.Server{pair.HTTP}
+	var servers []transport.Server
+	if pair.HTTP != nil {
+		servers = append(servers, pair.HTTP)
+	}
 	if pair.HTTPS != nil {
 		servers = append(servers, pair.HTTPS)
 	}

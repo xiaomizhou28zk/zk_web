@@ -7,7 +7,7 @@
    ./scripts/gen-dev-cert.sh
    ```
 
-2. 在 `configs/debug/config.yaml` 中设置 **`server.https.enabled: true`**（为 `false` 时 **不会监听 8443**，会出现 `ERR_CONNECTION_REFUSED`）。
+2. 在 `configs/debug/config.yaml` 中设置 **`server.https.enabled: true`**（为 `false` 时 **不会监听 8443**，会出现 `ERR_CONNECTION_REFUSED`）。仅 HTTPS 时再加 **`server.http.enabled: false`**。
 
 3. 重启服务，控制台应出现 `[http] HTTPS 已启用，将监听 :8443…`。浏览器打开 **`https://127.0.0.1:8443/`**（须 **https**，不是 http）。
 

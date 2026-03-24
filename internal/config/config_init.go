@@ -20,10 +20,46 @@ type Config struct {
 	Server   Server   `yaml:"server"`
 }
 
-// Server HTTP/HTTPS 监听（HTTPS 可选，见 HTTPS.Enabled）
+// Server HTTP/HTTPS 监听；明文见 HTTP，TLS 见 HTTPS
 type Server struct {
-	HTTPAddr string    `yaml:"http_addr"` // 如 :8080，空则默认 :8080
-	HTTPS    *HTTPSTLS `yaml:"https"`
+	HTTP  HTTPPlain `yaml:"http"`
+	HTTPS *HTTPSTLS `yaml:"https"`
+}
+
+// HTTPPlain 明文 HTTP；未写 enabled 时默认开启（兼容旧配置不写 http 段）
+type HTTPPlain struct {
+	Addr    string // 监听地址，如 :8080，空则 GetServerConfig 中默认 :8080
+	Enabled *bool  // nil=默认 true；显式 false 时关闭明文 HTTP（须 https 可用）
+}
+
+// UnmarshalYAML 修正 gopkg.in/yaml.v3 将 enabled: false 解到 *bool 时常得到 nil 的问题，
+// 导致 PlainHTTPOn 误判为「未配置」而默认开启 8080。
+func (h *HTTPPlain) UnmarshalYAML(n *yaml.Node) error {
+	var m map[string]interface{}
+	if err := n.Decode(&m); err != nil {
+		return err
+	}
+	if v, ok := m["addr"]; ok {
+		h.Addr = fmt.Sprint(v)
+	}
+	if v, ok := m["enabled"]; ok {
+		switch b := v.(type) {
+		case bool:
+			x := b
+			h.Enabled = &x
+		default:
+			return fmt.Errorf("server.http.enabled 须为布尔值，当前为 %T", v)
+		}
+	}
+	return nil
+}
+
+// PlainHTTPOn 是否启动明文 HTTP 端口
+func (h HTTPPlain) PlainHTTPOn() bool {
+	if h.Enabled == nil {
+		return true
+	}
+	return *h.Enabled
 }
 
 // HTTPSTLS 启用后会在 Addr 上监听 TLS（如 :8443），需有效 cert/key 文件
@@ -87,8 +123,8 @@ func GetServerConfig() Server {
 		return defaultServerConfig()
 	}
 	s := c.Server
-	if s.HTTPAddr == "" {
-		s.HTTPAddr = ":8080"
+	if s.HTTP.Addr == "" {
+		s.HTTP.Addr = ":8080"
 	}
 	if s.HTTPS != nil && s.HTTPS.Enabled && s.HTTPS.Addr == "" {
 		s.HTTPS.Addr = ":8443"
@@ -97,7 +133,7 @@ func GetServerConfig() Server {
 }
 
 func defaultServerConfig() Server {
-	return Server{HTTPAddr: ":8080"}
+	return Server{HTTP: HTTPPlain{Addr: ":8080"}}
 }
 
 // parseConfig 解析 YAML 配置文件

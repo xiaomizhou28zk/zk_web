@@ -47,6 +47,49 @@
       return div.innerHTML;
     }
 
+    function formatStatNum(n) {
+      n = Number(n);
+      if (!isFinite(n) || n < 0) return '0';
+      if (n >= 10000) {
+        var w = n / 10000;
+        var s = w >= 10 ? String(Math.floor(w)) : String(Math.round(w * 10) / 10).replace(/\.0$/, '');
+        return s + '万';
+      }
+      return String(n);
+    }
+
+    var svgCardLike =
+      '<svg class="card-stat__icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false" fill="none">' +
+      '<path stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" d="M6.633 10.25c.806 0 1.536-.438 2.038-1.133a9.093 9.093 0 0 1 2.236-2.48c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.851.068 1.285 0 3.255-2.33 5.954-5.47 6.154-2.893.19-5.534-1.457-6.634-4.154ZM5.25 10h-1A2.25 2.25 0 0 0 2 12.25v6.5A2.25 2.25 0 0 0 4.25 21h1A2.25 2.25 0 0 0 7.5 18.75v-6.5A2.25 2.25 0 0 0 5.25 10Z"/>' +
+      '</svg>';
+    var svgCardFav =
+      '<svg class="card-stat__icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false" fill="none">' +
+      '<path stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"/>' +
+      '</svg>';
+
+    function favoriteRowStatsHtml(a) {
+      var lc = a.likeCount != null ? a.likeCount : a.like_count;
+      var fc = a.favoriteCount != null ? a.favoriteCount : a.favorite_count;
+      var like = Number(lc);
+      var fav = Number(fc);
+      if (!isFinite(like) || like < 0) like = 0;
+      if (!isFinite(fav) || fav < 0) fav = 0;
+      return (
+        '<div class="card-stats my-favorites-row-stats" aria-label="点赞与收藏">' +
+        '<span class="card-stat" title="点赞">' +
+        svgCardLike +
+        '<span class="card-stat__num">' +
+        escapeHtml(formatStatNum(like)) +
+        '</span></span>' +
+        '<span class="card-stat" title="收藏">' +
+        svgCardFav +
+        '<span class="card-stat__num">' +
+        escapeHtml(formatStatNum(fav)) +
+        '</span></span>' +
+        '</div>'
+      );
+    }
+
     function render() {
       var size = getParams().size;
       if (typeof getMyFavoriteArticles !== 'function') {
@@ -74,22 +117,26 @@
             return;
           }
 
+          var favoritesListUrl = buildUrl({ page: page, size: size });
+
           listEl.innerHTML = items
             .map(function (a) {
               var date = a.publishedAt || '—';
+              var articleUrl =
+                'article.html?id=' + a.id + '&from=' + encodeURIComponent(favoritesListUrl);
               return (
                 '<div class="my-articles-row" data-id="' +
                 a.id +
                 '">' +
                 '<a href="' +
-                escapeHtml('article.html?id=' + a.id) +
+                escapeHtml(articleUrl) +
                 '" class="my-articles-title">' +
                 escapeHtml(a.title) +
                 '</a>' +
                 '<span class="my-articles-date">' +
                 escapeHtml(date) +
                 '</span>' +
-                '<span class="my-articles-status my-articles-status-pub">已发布</span>' +
+                favoriteRowStatsHtml(a) +
                 '</div>'
               );
             })

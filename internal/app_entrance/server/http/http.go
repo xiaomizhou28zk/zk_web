@@ -49,20 +49,27 @@ type ServerPair struct {
 	HTTPS *kratosHttp.Server
 }
 
-// NewServerPair 同时构建 HTTP 与（可选）HTTPS 两个 Kratos Server，路由相同。
+// NewServerPair 构建明文 HTTP（可关）与 TLS HTTPS（可选）的 Kratos Server，路由相同。
+// 仅 HTTPS：server.http.enabled: false 且 server.https 启用并配置有效证书。
 func NewServerPair(register Register, tokenManager *domainAuth.Manager, sc config.Server) (*ServerPair, error) {
-	pair := &ServerPair{HTTP: newPlainHTTPServer(register, tokenManager, sc)}
+	pair := &ServerPair{}
+	if sc.HTTP.PlainHTTPOn() {
+		pair.HTTP = newPlainHTTPServer(register, tokenManager, sc)
+	}
 	var err error
 	pair.HTTPS, err = newTLSHTTPServer(register, tokenManager, sc)
 	if err != nil {
 		return nil, err
 	}
+	if pair.HTTP == nil && pair.HTTPS == nil {
+		return nil, errors.New("未启动任何 HTTP 服务：若关闭明文请设 server.http.enabled: false 并启用 server.https 且配置有效证书")
+	}
 	return pair, nil
 }
 
-// newPlainHTTPServer 明文 HTTP（默认 :8080，由配置 server.http_addr 覆盖）
+// newPlainHTTPServer 明文 HTTP（默认 :8080，由配置 server.http.addr 覆盖）
 func newPlainHTTPServer(register Register, tokenManager *domainAuth.Manager, sc config.Server) *kratosHttp.Server {
-	addr := sc.HTTPAddr
+	addr := sc.HTTP.Addr
 	if addr == "" {
 		addr = ":8080"
 	}

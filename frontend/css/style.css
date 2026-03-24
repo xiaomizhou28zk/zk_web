@@ -3000,6 +3000,11 @@ body {
   color: var(--accent);
 }
 
+/* 我的收藏：行内点赞/收藏数（与首页卡片 card-stats 同组件类） */
+.my-favorites-row-stats {
+  margin-left: auto;
+}
+
 /* 我的文章：首页展示拨片 */
 .my-articles-vis-cell {
   display: inline-flex;

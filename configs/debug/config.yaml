@@ -1,6 +1,9 @@
-# HTTP 明文端口；HTTPS 见 server.https（需证书，可用 scripts/gen-dev-cert.sh 生成本地自签名）
+# 明文 HTTP：server.http；TLS：server.https（证书见 scripts/gen-dev-cert.sh）
+# 仅 HTTPS：http.enabled: false，且 https.enabled: true 且证书存在（否则启动失败）
 server:
-  http_addr: ":8080"
+  http:
+    enabled: false
+    addr: ":8080"
   https:
     # 为 true 且证书存在时监听 :8443；缺证书时仅打日志并只起 HTTP（见 configs/certs/README.md）
     enabled: true

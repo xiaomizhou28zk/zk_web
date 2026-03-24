@@ -194,7 +194,7 @@ func RegisterUploadRoutesAndStatic(srv *kratosHttp.Server, authMgr *domainAuth.M
 		saveUploadedFile(w, r, authMgr, uploadSpec{
 			dir:       articleCoverUploadDir(),
 			urlPrefix: "/static/images/",
-			maxBytes:  6 << 20,
+			maxBytes:  10 << 20, // 封面/头像等图片，单文件最大 10MB
 			allowedExt: map[string]bool{
 				".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true,
 			},
